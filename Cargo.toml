@@ -1,0 +1,21 @@
+[package]
+name = "morse-codec"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["decoder", "encoder"]
+decoder = []
+encoder = []
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "s"
+
+[profile.dev]
+lto = true
+opt-level = "s"
+
+[dev-dependencies]
+keyboard_query = "0.1.0"
