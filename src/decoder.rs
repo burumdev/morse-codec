@@ -169,7 +169,8 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
     ///
     /// This can be helpful to create a message with trivial encryption.
     /// Letters can be shuffled for example. This kind of encryption can
-    /// easily be broken with powerful algorithms and AI. So DON'T use it for secure communication.
+    /// easily be broken with powerful algorithms and AI.
+    /// **DON'T** use it for secure communication.
     pub fn with_character_set(mut self, character_set: CharacterSet) -> Self {
         self.character_set = character_set;
 
@@ -389,8 +390,8 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
 
     /// Add current decoded character to the message.
     ///
-    /// This happens automatically when using [signal_event] calls.
-    /// Use this with [add_signal_to_character] directly with
+    /// This happens automatically when using `signal_event` calls.
+    /// Use this with `add_signal_to_character` directly with
     /// prepared [MorseSignal] enums.
     pub fn add_current_char_to_message(&mut self) {
         if self.message.get_edit_pos() < MSG_MAX {
@@ -425,7 +426,7 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
     /// When a character ending long space signal or a word ending long space is sent,
     /// signal buffer will be decoded automatically and character will be added to message.
     /// Note that if signal input itself has ended, oftentimes there's no way to send that signal.
-    /// Use [signal_event_end] at that point to manually end the character.
+    /// Use `signal_event_end` at that point to manually end the character.
     pub fn signal_event(&mut self, duration_ms: MilliSeconds, is_high: bool) {
         let tolerance_range = self.signal_tolerance_range(duration_ms);
 

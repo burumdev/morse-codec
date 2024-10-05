@@ -12,7 +12,7 @@ use crate::{
     message::Message,
     CharacterSet,
     MorseCodeArray,
-    MorseSignal::{ Long as L, Short as S },
+    MorseSignal::{Long as L, Short as S},
     DEFAULT_CHARACTERS,
     LONG_SIGNAL_MULTIPLIER,
     MORSE_ARRAY_LENGTH,
@@ -36,7 +36,7 @@ pub enum SDM {
     Low(u8),
 }
 
-use SDM::{ Empty as SDMEmpty, High as SDMHigh, Low as SDMLow };
+use SDM::{Empty as SDMEmpty, High as SDMHigh, Low as SDMLow};
 
 pub type MorseCharray = [Option<u8>; MORSE_ARRAY_LENGTH];
 
@@ -71,24 +71,41 @@ impl<const MSG_MAX: usize> Encoder<MSG_MAX> {
         }
     }
 
+    /// Build encoder with a starting message.
+    ///
+    /// edit_pos_end means we'll continue encoding from the end of this string.
+    /// If you pass false to it, we'll start from the beginning.
     pub fn with_message(mut self, message_str: &str, edit_pos_end: bool) -> Self {
         self.message = Message::new(message_str, edit_pos_end);
 
         self
     }
 
+    /// Build encoder with an arbitrary editing start position.
+    ///
+    /// Maybe client code saved the previous editing position to an EEPROM, harddisk, local
+    /// storage in web and wants to continue from that.
     pub fn with_edit_position(mut self, pos: usize) -> Self {
         self.message.set_edit_pos(pos);
 
         self
     }
 
+    /// Use a different character set than default english alphabet.
+    ///
+    /// This can be helpful to create a message with trivial encryption.
+    /// Letters can be shuffled for example. This kind of encryption can
+    /// easily be broken with powerful algorithms and AI.
+    /// **DON'T** use it for secure communication.
     pub fn with_character_set(mut self, character_set: CharacterSet) -> Self {
         self.character_set = character_set;
 
         self
     }
 
+    /// Build and get yourself a shiny new [MorseEncoder].
+    ///
+    /// The ring is yours now...
     pub fn build(self) -> MorseEncoder<MSG_MAX> {
         let Encoder {
             message, character_set, encoded_message,
@@ -161,8 +178,8 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
                         _ => SDMEmpty,
                     };
 
-                    // If we have a character in the future, we put a space between
-                    // this signal and the next.
+                    // If we have a character in the future, we put a
+                    // signal space between this signal and the next.
                     if encoded_iter.peek().is_some() {
                         *sdm_iter.next().unwrap() = SDMLow(1);
                     }
@@ -193,8 +210,9 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
 
 // Public API
 impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
-
     // INPUTS
+    /// Encode a single character at the edit position
+    /// and add it both to the message and encoded_message.
     pub fn encode_character(&mut self, ch: &u8) -> Result<(), &str> {
         let pos = self.message.get_edit_pos();
         if pos < MSG_MAX {
@@ -207,8 +225,10 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
         }
     }
 
+    /// Encode a &str slice at the edit position
+    /// and add it both to the message and encoded message.
     pub fn encode_slice(&mut self, str_slice: &str) -> Result<(), &str> {
-        if self.message.get_edit_pos() + str_slice.bytes().len() < MSG_MAX {
+        if self.message.len() + str_slice.bytes().len() < MSG_MAX {
             str_slice.bytes().for_each(|ch| {
                 self.encode_character(&ch).unwrap();
             });
@@ -219,6 +239,7 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
         }
     }
 
+    /// Encode the entire message and save it to encoded_message.
     pub fn encode_message_all(&mut self) {
         for index in 0..self.message.len() {
             let ch = &self.message.char_at(index).clone();
@@ -229,6 +250,9 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
     }
 
     // OUTPUTS
+    /// Get last encoded message character as `Option<u8>` byte arrays of morse code.
+    /// Arrays will have a fixed length of `MORSE_ARRAY_LENGTH` and if there's no
+    /// signal the option will be None.
     pub fn get_last_char_as_morse_charray(&self) -> Option<MorseCharray> {
         let pos = self.message.get_edit_pos();
         if pos > 0 {
@@ -238,6 +262,9 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
         }
     }
 
+    /// Get last encoded message character as `Option<SDM>` arrays of morse code.
+    /// The multiplier values then can be used to calculate durations of individual
+    /// signals to play or animate the morse code.
     pub fn get_last_char_as_sdm(&self) -> Option<SDMArray> {
         let pos = self.message.get_edit_pos();
         if pos > 0 {
@@ -247,12 +274,18 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
         }
     }
 
+    /// Get entire encoded message as `Option<u8>` byte arrays of morse code.
+    /// Arrays will have a fixed length of `MORSE_ARRAY_LENGTH` and if there's no
+    /// signal the option will be `None`.
     pub fn get_encoded_message_as_morse_charrays(&self) -> impl Iterator<Item = Option<MorseCharray>> + '_ {
         (0..self.message.len()).map(|index| {
             self.get_encoded_char_as_morse_charray(index)
         })
     }
 
+    /// Get entire encoded message as `Option<SDM>` arrays of morse code.
+    /// The multiplier values then can be used to calculate durations of individual
+    /// signals to play or animate the morse code.
     pub fn get_encoded_message_as_sdm_arrays(&self) -> impl Iterator<Item = Option<SDMArray>> + '_ {
         (0..self.message.len()).map(|index| {
             self.get_encoded_char_as_sdm(index)
