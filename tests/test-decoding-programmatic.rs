@@ -284,10 +284,9 @@ fn decoding_single_t() {
 }
 
 // Create a message with a single "T"
-// This one is a showstopper
-// How can we be sure if a long signal followed by a long signal space is T or E,
-// if we didn't sample any signals before it?
-// FIXME: Challenge accepted? Fix it.
+// This time we use a reference short signal duration
+// passed to the builder.
+// So this should work as expected.
 #[test]
 fn decoding_single_t_default_short_ms() {
     const MESSAGE_MAX_LENGTH: usize = 1;
