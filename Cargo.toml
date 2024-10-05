@@ -2,6 +2,12 @@
 name = "morse-codec"
 version = "0.1.0"
 edition = "2021"
+authors = ["Barış Ürüm"]
+license = "MIT"
+repository = "https://github.com/burumdev/morse-codec"
+description = "Library for live decoding and encoding of morse code messages. Supports multiple embedded devices and operating systems by being no_std."
+keywords = ["morse", "encoder", "decoder", "no_std", "embedded"]
+categories = ["embedded", "no-std::no-alloc", "encoding", "text-processing", "accessibility"]
 
 [features]
 default = ["decoder", "encoder"]
