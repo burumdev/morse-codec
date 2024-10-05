@@ -1,3 +1,7 @@
+<p align="center" style="padding: 25px 0">
+  <img src="./morse-logo.png?raw=true" alt="morse-codec logo" />
+</p>
+
 # morse-codec
 Rust library for live decoding and encoding of morse code messages. Supports multiple embedded devices and operating systems by being no_std.
 
@@ -104,7 +108,7 @@ While running tests use of `--nocapture` option with the test command is recomme
 enable `println!()` outputs from the tests so inputs and outputs can be observed.
 
 ```
-cargo test test_decoding_live_lazy -- --nocapture
+cargo test decoding_live_lazy -- --nocapture
 ```
 
 ## License
