@@ -9,12 +9,13 @@
 //! * No vectors or any other type of dynamic heap memory used, all data is plain old stack arrays.
 //! * We decode the signals character by character instead of creating a large buffer for all
 //!   signals and decoding it at the end. As a result, if an initial reference short duration is not
-//!   provided, we have problems with words starting with 'T' decoding as different characters. This is a problem because
+//!   provided, there's a problem with words starting with 'T' decoding as different characters. This is a problem because
 //!   we can't determine the length of spaces (low signals) after the high signal being long with only one signal as reference.
 //!   Creating a large buffer would fix this, because we could audit the entire signal buffer to iron out wrong decodings,
 //!   but the large size of the buffer would not fit into small RAM capacities of certain 8 bit
 //!   MCUs like AVR ATmega328P with SRAM size of 2KB and even smaller sizes for simpler chips. So we
 //!   clear the buffer every time we add a character.
+//!
 //!   One way to fix the wrong decoding problems of 'T' character is to provide an initial reference short signal
 //!   length to the decoder. A good intermediate value is 100 milliseconds.
 //!
@@ -49,8 +50,13 @@ use crate::{
     message::Message,
     CharacterSet, MorseCodeArray,
     MorseSignal::{self, Long as L, Short as S},
-    DECODING_ERROR_BYTE, DEFAULT_CHARACTERS, LONG_SIGNAL_MULTIPLIER, MORSE_ARRAY_LENGTH,
-    MORSE_CHARACTERS, MORSE_DEFAULT_CHAR, WORD_SPACE_MULTIPLIER,
+    DECODING_ERROR_BYTE,
+    MORSE_CODE_SET,
+    DEFAULT_CHARACTER_SET,
+    MORSE_ARRAY_LENGTH,
+    MORSE_DEFAULT_CHAR,
+    LONG_SIGNAL_MULTIPLIER,
+    WORD_SPACE_MULTIPLIER,
 };
 
 /// Decoding precision is either Lazy or Accurate.
@@ -123,7 +129,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
         Self {
             // User defined
             precision: Lazy,
-            character_set: DEFAULT_CHARACTERS,
+            character_set: DEFAULT_CHARACTER_SET,
             signal_tolerance: 0.50,
             reference_short_ms: 0,
             // Internal stuff
@@ -253,7 +259,7 @@ pub struct MorseDecoder<const MSG_MAX: usize> {
 // Private stuff.. Don' look at it
 impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
     fn get_char_from_morse_char(&self, morse_char: &MorseCodeArray) -> u8 {
-        let index = MORSE_CHARACTERS
+        let index = MORSE_CODE_SET
             .iter()
             .position(|mchar| mchar == morse_char);
 

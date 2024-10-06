@@ -1,11 +1,8 @@
-//! Library for live decoding and encoding of morse code messages. no_std to support multiple
-//! devices including embedded. UTF-8 is not supported at the moment, but can be implemented behind
-//! a feature flag in the future.
+//! Rust library for live decoding and encoding of morse code messages.
+//! Supports multiple embedded devices and operating systems by being no_std.
 //!
 //! You can create messages by sending individual high and low signals in milliseconds to decoder,
 //! from the keyboard, mouse clicks, or a button connected to some embedded device.
-//! You can also bypass signal input and add prepared short or long morse signals to characters
-//! directly.
 //!
 //! Use the encoder to turn your messages or characters into morse code strings or create a
 //! sequence of signals from the encoder to drive an external component such as an LED, step motor or speaker.
@@ -13,6 +10,9 @@
 //! # Features
 //! * Decoder
 //! * Encoder
+//!
+//! UTF-8 is not supported at the moment, but can be implemented behind
+//! a feature flag in the future.
 //!
 //! The lib is no_std outside testing to make sure it will work on embedded devices
 //! as well as operating systems.
@@ -33,16 +33,16 @@ pub const CHARACTER_SET_LENGTH: usize = 53;
 const LONG_SIGNAL_MULTIPLIER: u16 = 3;
 const WORD_SPACE_MULTIPLIER: u16 = 7;
 
-/// Char version of the [FILLER_BYTE] coz why not? It's mainly used while generating bytes from
-/// &str slices. A [char] which is utf-8 by default in Rust, can be more than one byte, turning
-/// chars into bytes if they're ascii makes the code stable.
-pub const FILLER_CHAR: char = '#';
-
 /// We use this character to fill message arrays so when we encounter this char
 /// it actually means there's no character there.
 ///
 /// The character # is not a part of international morse code, so it's a good candidate.
-pub const FILLER_BYTE: u8 = FILLER_CHAR as u8;
+pub const FILLER_BYTE: u8 = b'#';
+
+/// Char version of the [FILLER_BYTE] coz why not? It's mainly used while generating bytes from
+/// &str slices. A [char] which is utf-8 by default in Rust, can be more than one byte, turning
+/// chars into bytes if they're ascii makes the code stable.
+pub const FILLER_CHAR: char = FILLER_BYTE as char;
 
 /// If a decoding error happens, we put this character as a placeholder.
 pub const DECODING_ERROR_BYTE: u8 = b'?';
@@ -64,8 +64,8 @@ pub const MORSE_DEFAULT_CHAR: MorseCodeArray = [None, None, None, None, None, No
 
 /// Internal representation of morse characters. It's an array of length [CHARACTER_SET_LENGTH].
 ///
-/// Human language letters can be converted to these morse code arrays or vice-versa.
-pub const MORSE_CHARACTERS: [MorseCodeArray; CHARACTER_SET_LENGTH] = [
+/// Letters can be converted to these morse code arrays and vice-versa.
+pub const MORSE_CODE_SET: [MorseCodeArray; CHARACTER_SET_LENGTH] = [
     //
     // Default char is empty character
     MORSE_DEFAULT_CHAR, // Empty character ' '
@@ -146,7 +146,7 @@ pub type CharacterSet = [u8; CHARACTER_SET_LENGTH];
 /// let decoder = Decoder::<128>::new().with_character_set(my_set).build();
 /// ```
 ///
-pub const DEFAULT_CHARACTERS: CharacterSet = [
+pub const DEFAULT_CHARACTER_SET: CharacterSet = [
     b' ', b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H', b'I', b'J', b'K', b'L', b'M', b'N', b'O',
     b'P', b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X', b'Y', b'Z', b'1', b'2', b'3', b'4', b'5',
     b'6', b'7', b'8', b'9', b'0', b',', b'?', b':', b'-', b'"', b'(', b'=', b'X', b'.', b';', b'/',

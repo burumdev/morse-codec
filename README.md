@@ -1,5 +1,5 @@
 <p align="center" style="padding: 25px 0">
-  <img src="./morse-logo.png?raw=true" alt="morse-codec logo" />
+  <img width="279" height="240" src="https://raw.githubusercontent.com/burumdev/morse-codec/refs/heads/master/morse-logo.png" alt="morse-codec logo" />
 </p>
 
 # morse-codec
@@ -8,27 +8,25 @@ Rust library for live decoding and encoding of morse code messages. Supports mul
 ## Summary
 You can create messages by sending individual high and low signals in milliseconds to decoder,
 from the keyboard, mouse clicks, or a button connected to some embedded device.
-You can also bypass signal input and add prepared short or long morse signals to characters
-directly.
 
 Use the encoder to turn your messages or characters into morse code strings or create a
 sequence of signals from the encoder to drive an external component such as an LED, step motor or speaker.
 
 UTF-8 is not supported at the moment due to memory limitations of embedded devices,
-but can be implemented behind a feature flag in the future.
+but can be implemented behind a feature flag in the future. It'll be a feature in the future.
 
 The lib is no_std outside testing to make sure it will work on embedded devices
 as well as operating systems.
 
 ## Features
 
-* Decoder
+* **Decoder**
 
 Live decoder for morse code that converts morse code to ASCII characters. Supports real-time decoding of incoming signals and decoding
 prepared morse signals.
 
 Receives morse signals and decodes them character by character
-to create a char array (charray) message with constant max length.
+to create a byte array message with constant max length.
 Empty characters will be filled with the const FILLER_BYTE and
 decoding errors will be filled with DECODING_ERROR_BYTE.
 Trade-offs to support no_std include:
@@ -46,16 +44,11 @@ let decoder = morse_codec::Decoder::<MSG_MAX>::new()
     .with_reference_short_ms(90)
     .build();
 
-// We receive high signal from button. 100 ms is a short dit signal
-// because reference_short_ms is 90 and default tolerance range factor is 0.5.
-// 90 ms falls into 100 x 0.5 = 50 ms to 100 + 50 = 150 ms.
-// So it's a short or dit signal.
+// We receive a short high signal from button.
 decoder.signal_event(100, true);
-// We receive a low signal from the button. 80 ms low signal is a signal space dit.
-// It falls between 50 and 150.
+// We receive a short low signal from the button.
 decoder.signal_event(80, false);
-// 328 ms high long signal is a dah. 328 x 0.5 = 164, 328 + 164 = 492.
-// Reference short signal 90 x 3 (long signal multiplier) = 270. 270 falls into the range.
+// 328 ms high long signal is a dah.
 decoder.signal_event(328, true);
 // 412 ms low long signal will end the character.
 decoder.signal_event(412, false);
@@ -65,21 +58,24 @@ decoder.signal_event(412, false);
 
 ```
 
-* Encoder
+* **Encoder**
 
 Morse code encoder to turn text into morse code text or signals.
 
 The encoder takes **&str** literals or character bytes and
-turns them into a fixed length char array. Then client code can encode these characters
-to morse code either character by character, from slices, or all in one go.  
+turns them into a fixed length byte array. Then client code can encode these characters
+to morse code either one by one, from slices, or all in one go.
+
 Encoded morse code can be retrieved as morse character arrays ie. ['.','-','.'] or Signal
 Duration Multipliers **SDMArray** to calculate individual signal durations by the client code.
 
 ```rust
 const MSG_MAX = 3;
 let encoder = morse_codec::Encoder::<MSG_MAX>::new()
-    // We have the message to encode ready and pass it to the builder
-    .with_message("SOS")
+    // We have the message to encode ready and pass it to the builder.
+    // We pass true as second parameter to tell the encoder editing will
+    // continue from the end of this first string.
+    .with_message("SOS", true)
     .build();
 
 // Encode the whole message
@@ -99,17 +95,33 @@ encoded_charrays.for_each(|charray| {
 ```
 
 ## Running Tests
-Instead of reference implementation in an examples directory, we have integration tests.
+Instead of reference implementation in examples directory, we have integration tests.
 They serve a dual purpose of testing the library as well as being a reference client implementation.
-In addition to the documentation, one can use these integration tests to learn how the library works
+In addition to documentation, one can use these integration tests to understand how the library works
 in practice.
 
-While running tests use of `--nocapture` option with the test command is recommended. This will
-enable `println!()` outputs from the tests so inputs and outputs can be observed.
+Use of `--nocapture` option with the test command is recommended. This will
+enable `println!()` outputs from the tests so that inputs and outputs can be observed.
 
 ```
 cargo test decoding_live_lazy -- --nocapture
 ```
+
+## Contributing
+Contributions are more than welcome. Check the TODO section of this readme for details on currently planned features.
+If you encounter bugs, you can open a 'bug' tagged issue on the Issues tab. Now you have an issue with me and the library.
+If you solved the issue already then you can open a pull request with the fix.
+
+If you have different ideas for the lib you can use the Issues tab again with an 'enhancement' tagged issue.
+Please do this before sending a pull request with the new feature. This will help understand the benefits of the
+new feature before incorporating it and reduces the back and forth dialogue required while reviewing the code.
+
+All contributions will be licensed under the terms of MIT license shipped with this library.
+
+## TODO
+* Complete TODOs written in the code. For example always return a `Result<>` from functions that can fail.
+* Support UTF-8 character set behind a feature flag that doesn't hurt embedded devices.
+* Support playing audio of encoded messages behind a feature flag.
 
 ## License
 This work is licensed under terms of MIT license as described here: https://opensource.org/license/mit

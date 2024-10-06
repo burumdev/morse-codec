@@ -13,11 +13,11 @@ use crate::{
     CharacterSet,
     MorseCodeArray,
     MorseSignal::{Long as L, Short as S},
-    DEFAULT_CHARACTERS,
-    LONG_SIGNAL_MULTIPLIER,
+    MORSE_CODE_SET,
+    DEFAULT_CHARACTER_SET,
     MORSE_ARRAY_LENGTH,
-    MORSE_CHARACTERS,
     MORSE_DEFAULT_CHAR,
+    LONG_SIGNAL_MULTIPLIER,
     WORD_SPACE_MULTIPLIER,
 };
 
@@ -66,7 +66,7 @@ impl<const MSG_MAX: usize> Encoder<MSG_MAX> {
     pub fn new() -> Self {
         Self {
             message: Message::default(),
-            character_set: DEFAULT_CHARACTERS,
+            character_set: DEFAULT_CHARACTER_SET,
             encoded_message: [&MORSE_DEFAULT_CHAR; MSG_MAX],
         }
     }
@@ -133,7 +133,7 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
             .position(|setchar| setchar == ch);
 
         if let Some(i) = index {
-            Some(&MORSE_CHARACTERS[i])
+            Some(&MORSE_CODE_SET[i])
         } else {
             //TODO: Maybe convert this into a Result with a custom error struct, or am I
             // asking for trouble?
