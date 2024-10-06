@@ -1,4 +1,31 @@
-use crate::{ FILLER_BYTE, FILLER_CHAR };
+//! Message struct to hold decoded message or message to be encoded.
+//!
+//! Client code can use this to access and manipulate the
+//! internal message of [MorseDecoder] or [MorseEncoder]:
+//!
+//! ```rust
+//! // Get a decoded message
+//! let decoded_message = decoder.message.as_str();
+//! let decoded_message_bytes = decoder.message.as_bytes();
+//! // ...Do something with the message...
+//!
+//! // Clear the message
+//! decoder.message.clear();
+//!
+//! // Set message to something different
+//! // and continue decoding from the end
+//! decoder.set_message("SOME INITIAL MESSAGE", true);
+//!
+//! // We continue sending signals
+//! decoder.signal_event(125, true);
+//! decoder.signal_event(200, false);
+//! ....
+//!
+//! // To show an editing cursor on the screen
+//! let editing_position = decoder.message.get_edit_pos();
+//! ```
+
+use crate::{FILLER_BYTE, FILLER_CHAR};
 
 pub struct Message<const MSG_MAX: usize> {
     chars: [u8; MSG_MAX],
@@ -16,6 +43,7 @@ impl<const MSG_MAX: usize> Default for Message<MSG_MAX> {
 
 // Constructor with a starter string
 impl<const MSG_MAX: usize> Message<MSG_MAX> {
+    // Maximum index editing position can be at
     const POS_MAX: usize = MSG_MAX - 1;
 
     /// Get an instance of Message starting from an &str.
@@ -37,9 +65,15 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
 
     // Static member utility function to convert an &str to byte array internal format.
     fn str_to_chars(str: &str) -> [u8; MSG_MAX] {
-        let mut str_iter = str.chars().take(MSG_MAX).filter(|ch| ch.is_ascii());
+        let mut str_iter = str.chars()
+            .take(MSG_MAX)
+            .filter(|ch| ch.is_ascii());
 
-        core::array::from_fn(|_| str_iter.next().unwrap_or(FILLER_CHAR).to_ascii_uppercase() as u8)
+        core::array::from_fn(|_|
+            str_iter.next()
+                .unwrap_or(FILLER_CHAR)
+                .to_ascii_uppercase() as u8
+        )
     }
 }
 
@@ -65,7 +99,6 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
 
 // Public API
 impl<const MSG_MAX: usize> Message<MSG_MAX> {
-
     /// Get an iterator to the message text contained within.
     pub fn iter(&self) -> MessageIterator<MSG_MAX> {
         MessageIterator {

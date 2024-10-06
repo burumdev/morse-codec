@@ -13,6 +13,7 @@ use crate::{
     CharacterSet,
     MorseCodeArray,
     MorseSignal::{Long as L, Short as S},
+    DECODING_ERROR_BYTE,
     MORSE_CODE_SET,
     DEFAULT_CHARACTER_SET,
     MORSE_ARRAY_LENGTH,
@@ -195,15 +196,17 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
         }
     }
 
-    fn encode(&mut self, ch: &u8, index: usize) {
+    fn encode(&mut self, ch: &u8, index: usize) -> u8 {
         let ch_upper = ch.to_ascii_uppercase();
         match self.get_morse_char_from_char(&ch_upper) {
             Some(mchar) => {
-                self.message.add_char(ch_upper);
                 self.encoded_message[index] = mchar;
+
+                ch_upper
             },
-            //TODO: Handle character not found case here. We currently do nothing.
-            None => ()
+            //TODO: Handle character not found case here. We currently return decoding error
+            //character.
+            None => DECODING_ERROR_BYTE
         }
     }
 }
@@ -216,7 +219,8 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
     pub fn encode_character(&mut self, ch: &u8) -> Result<(), &str> {
         let pos = self.message.get_edit_pos();
         if pos < MSG_MAX {
-            self.encode(ch, pos);
+            let ch_uppercase = self.encode(ch, pos);
+            self.message.add_char(ch_uppercase);
             self.message.shift_edit_right();
 
             Ok(())
@@ -243,6 +247,7 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
     pub fn encode_message_all(&mut self) {
         for index in 0..self.message.len() {
             let ch = &self.message.char_at(index).clone();
+
             self.encode(ch, index);
         }
 
@@ -274,7 +279,7 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
         }
     }
 
-    /// Get entire encoded message as `Option<u8>` byte arrays of morse code.
+    /// Get an iterator to encoded message as `Option<u8>` byte arrays of morse code.
     /// Arrays will have a fixed length of `MORSE_ARRAY_LENGTH` and if there's no
     /// signal the option will be `None`.
     pub fn get_encoded_message_as_morse_charrays(&self) -> impl Iterator<Item = Option<MorseCharray>> + '_ {
@@ -283,7 +288,7 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
         })
     }
 
-    /// Get entire encoded message as `Option<SDM>` arrays of morse code.
+    /// Get an iterator to entire encoded message as `Option<SDM>` arrays of morse code.
     /// The multiplier values then can be used to calculate durations of individual
     /// signals to play or animate the morse code.
     pub fn get_encoded_message_as_sdm_arrays(&self) -> impl Iterator<Item = Option<SDMArray>> + '_ {

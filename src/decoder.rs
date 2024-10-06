@@ -110,8 +110,8 @@ pub struct Decoder<const MSG_MAX: usize> {
     character_set: CharacterSet,
     signal_tolerance: f32,
     reference_short_ms: MilliSeconds,
-    // Internal stuff
     message: Message<MSG_MAX>,
+    // Internal stuff
     current_character: MorseCodeArray,
     signal_pos: usize,
     signal_buffer: SignalBuffer,
@@ -132,8 +132,8 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
             character_set: DEFAULT_CHARACTER_SET,
             signal_tolerance: 0.50,
             reference_short_ms: 0,
-            // Internal stuff
             message: Message::default(),
+            // Internal stuff
             current_character: MORSE_DEFAULT_CHAR,
             signal_pos: 0,
             signal_buffer: [SDEmpty; SIGNAL_BUFFER_LENGTH],

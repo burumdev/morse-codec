@@ -86,6 +86,10 @@ fn encoding_fox_whole() {
     });
 
     println!();
+    println!("After encoding message string is: {}", encoder.message.as_str());
+    println!("Message length: {}", encoder.message.len());
+
+    println!();
 
     println!("Adding a long slice at the end to trigger error. But we don't quit because it's a test.");
     let result = encoder.encode_slice(" Adding something at the end.");
@@ -123,6 +127,7 @@ fn encoding_fox_whole() {
     encoder.message.iter().for_each(|ch| {
         print!("{} ", *ch as char);
     });
+    println!();
 }
 
 #[test]
