@@ -13,7 +13,6 @@ use crate::{
     CharacterSet,
     MorseCodeArray,
     MorseSignal::{Long as L, Short as S},
-    DECODING_ERROR_BYTE,
     MORSE_CODE_SET,
     DEFAULT_CHARACTER_SET,
     MORSE_ARRAY_LENGTH,
@@ -44,6 +43,7 @@ pub type MorseCharray = [Option<u8>; MORSE_ARRAY_LENGTH];
 /// Signal Duration Multipliers are arrays of u8 values
 /// which can be used to multiply by a short signal duration constant
 /// to calculate durations of all signals in a letter or message.
+///
 /// This makes it easier to write code that plays audio
 /// signals with lenghts of these durations or create visual
 /// representations of morse code.
@@ -136,8 +136,6 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
         if let Some(i) = index {
             Some(&MORSE_CODE_SET[i])
         } else {
-            //TODO: Maybe convert this into a Result with a custom error struct, or am I
-            // asking for trouble?
             None
         }
     }
@@ -196,17 +194,19 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
         }
     }
 
-    fn encode(&mut self, ch: &u8, index: usize) -> u8 {
-        let ch_upper = ch.to_ascii_uppercase();
-        match self.get_morse_char_from_char(&ch_upper) {
-            Some(mchar) => {
-                self.encoded_message[index] = mchar;
+    fn encode(&mut self, ch: &u8, index: usize) -> Result<u8, &'static str> {
+        if ch.is_ascii() {
+            let ch_upper = ch.to_ascii_uppercase();
+            match self.get_morse_char_from_char(&ch_upper) {
+                Some(mchar) => {
+                    self.encoded_message[index] = mchar;
 
-                ch_upper
-            },
-            //TODO: Handle character not found case here. We currently return decoding error
-            //character.
-            None => DECODING_ERROR_BYTE
+                    Ok(ch_upper)
+                },
+                None => Err("Encoding error: Could not find character in character set.")
+            }
+        } else {
+            Err("Encoding error: Character is not ASCII")
         }
     }
 }
@@ -218,24 +218,33 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
     /// and add it both to the message and encoded_message.
     pub fn encode_character(&mut self, ch: &u8) -> Result<(), &str> {
         let pos = self.message.get_edit_pos();
-        if pos < MSG_MAX {
-            let ch_uppercase = self.encode(ch, pos);
-            self.message.add_char(ch_uppercase);
-            self.message.shift_edit_right();
+        let ch_uppercase = self.encode(ch, pos);
 
-            Ok(())
-        } else {
-            Err("Maximum message length reached.")
+        match ch_uppercase {
+            Ok(ch) => {
+                self.message.add_char(ch);
+                self.message.shift_edit_right();
+
+                Ok(())
+            },
+            Err(err) => Err(err),
         }
     }
 
     /// Encode a &str slice at the edit position
     /// and add it both to the message and encoded message.
+    ///
+    /// Note if the slice exceeds maximum message length it will return an error.
+    /// Non-ASCII characters will be ignored.
     pub fn encode_slice(&mut self, str_slice: &str) -> Result<(), &str> {
-        if self.message.len() + str_slice.bytes().len() < MSG_MAX {
-            str_slice.bytes().for_each(|ch| {
-                self.encode_character(&ch).unwrap();
-            });
+        let ascii_count = str_slice.chars().filter(|ch| ch.is_ascii()).count();
+
+        if self.message.len() + ascii_count < MSG_MAX {
+            str_slice.chars()
+                .filter(|ch| ch.is_ascii())
+                .for_each(|ch| {
+                    self.encode_character(&(ch as u8)).unwrap();
+                });
 
             Ok(())
         } else {
@@ -243,19 +252,19 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
         }
     }
 
-    /// Encode the entire message and save it to encoded_message.
+    /// Encode the entire message from start to finish
+    /// and save it to encoded_message.
     pub fn encode_message_all(&mut self) {
         for index in 0..self.message.len() {
             let ch = &self.message.char_at(index).clone();
 
-            self.encode(ch, index);
+            self.encode(ch, index).unwrap();
         }
-
-        //TODO: It will be better to return a unit result here ie. Result<(), &str>
     }
 
     // OUTPUTS
     /// Get last encoded message character as `Option<u8>` byte arrays of morse code.
+    ///
     /// Arrays will have a fixed length of `MORSE_ARRAY_LENGTH` and if there's no
     /// signal the option will be None.
     pub fn get_last_char_as_morse_charray(&self) -> Option<MorseCharray> {
@@ -268,8 +277,10 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
     }
 
     /// Get last encoded message character as `Option<SDM>` arrays of morse code.
+    ///
     /// The multiplier values then can be used to calculate durations of individual
     /// signals to play or animate the morse code.
+    /// It'll be great to filter-out `Empty` values of SDM arrays.
     pub fn get_last_char_as_sdm(&self) -> Option<SDMArray> {
         let pos = self.message.get_edit_pos();
         if pos > 0 {
@@ -281,7 +292,7 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
 
     /// Get an iterator to encoded message as `Option<u8>` byte arrays of morse code.
     /// Arrays will have a fixed length of `MORSE_ARRAY_LENGTH` and if there's no
-    /// signal the option will be `None`.
+    /// signal the option will be `None`. So it will be good to filter them out.
     pub fn get_encoded_message_as_morse_charrays(&self) -> impl Iterator<Item = Option<MorseCharray>> + '_ {
         (0..self.message.len()).map(|index| {
             self.get_encoded_char_as_morse_charray(index)
@@ -291,6 +302,7 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
     /// Get an iterator to entire encoded message as `Option<SDM>` arrays of morse code.
     /// The multiplier values then can be used to calculate durations of individual
     /// signals to play or animate the morse code.
+    /// It'll be good to filter `Empty` values that might fill the arrays at the end.
     pub fn get_encoded_message_as_sdm_arrays(&self) -> impl Iterator<Item = Option<SDMArray>> + '_ {
         (0..self.message.len()).map(|index| {
             self.get_encoded_char_as_sdm(index)

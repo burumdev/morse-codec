@@ -18,12 +18,15 @@ use keyboard_query::{ DeviceQuery, DeviceState };
 // Note that this test uses external crate 'keyboard_query' for keyboard press and release events.
 // It requires X11 dev libs on linux, otherwise it might not compile. What it requires on Windows and MacOS is beyond me,
 // but in theory it should work on those platforms as well.
-fn test_decoding_live(precision: Precision, initial_short: u16) {
+fn decoding_live(precision: Precision, initial_short: u16) {
     println!("TESTING DECODING LIVE");
     println!("With precision: {:?}", precision);
-    println!("\nPress 's' for a live signal, 'a' to end input and show the resulting message, 'q' to quit.");
 
-    const MESSAGE_MAX_LENGTH: usize = 256;
+    const MESSAGE_MAX_LENGTH: usize = 16;
+    println!("Message maximum length is {}", MESSAGE_MAX_LENGTH);
+
+    println!("\nPress 's' for a high signal, release 's' for a low signal, 'a' to end input and show the resulting message, 'q' to quit.");
+
     let mut decoder = Decoder::<MESSAGE_MAX_LENGTH>::new()
         .with_precision(precision)
         .with_reference_short_ms(initial_short)
@@ -81,16 +84,16 @@ fn test_decoding_live(precision: Precision, initial_short: u16) {
 }
 
 #[test]
-fn test_decoding_live_accurate() {
-    test_decoding_live(Precision::Accurate, 0);
+fn decoding_live_accurate() {
+    decoding_live(Precision::Accurate, 0);
 }
 
 #[test]
-fn test_decoding_live_lazy() {
-    test_decoding_live(Precision::Lazy, 0);
+fn decoding_live_lazy() {
+    decoding_live(Precision::Lazy, 0);
 }
 
 #[test]
-fn test_decoding_live_100_ms() {
-    test_decoding_live(Precision::Lazy, 100);
+fn decoding_live_100_ms() {
+    decoding_live(Precision::Lazy, 100);
 }

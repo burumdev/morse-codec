@@ -266,8 +266,6 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
         if let Some(i) = index {
             self.character_set[i]
         } else {
-            // For now we return the DECODING_ERROR_BYTE character for unknown
-            // TODO: Maybe handle this better? Return an Option or Result maybe? Anyone?
             DECODING_ERROR_BYTE
         }
     }
@@ -555,12 +553,12 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
             // decode the character. Either because we never received a character ender low
             // signal (3x short space) or a word ending long signal (7x short space)
             // or outright couldn't decode them, but hey.
-            // For now we just reset the character and start over, but we should perhaps
-            //TODO: Find a way to better handle this situation. Putting a decoding error character
-            // might be a better option for example
+            // We put a decoding error character at this point. And move on.
             _ => {
                 //DBG
-                //println!("We reached the end of buffer! Oh my god! We're gonna fall off this cliff and get an overflow!! Naah just relax..");
+                //println!("We reached the end of buffer and couldn't decode the character. signal_buffer so far is: {:?}", self.signal_buffer);
+                self.message.add_char(DECODING_ERROR_BYTE);
+                self.message.shift_edit_right();
                 self.reset_character();
             }
         }

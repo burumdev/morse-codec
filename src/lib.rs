@@ -131,10 +131,6 @@ pub const MORSE_CODE_SET: [MorseCodeArray; CHARACTER_SET_LENGTH] = [
 
 /// Client code can use this type to construct a different character mapping to morse code
 /// and construct the decoder or encoder with this custom character set.
-pub type CharacterSet = [u8; CHARACTER_SET_LENGTH];
-
-/// Default international morse code characters. It includes English language letters, numbers and
-/// punctuation marks.
 ///
 /// Empty character b' ' should be added at the beginning.
 /// It does not include special characters longer than 6 signals to keep arrays small. So no $ sign for ya.
@@ -142,10 +138,14 @@ pub type CharacterSet = [u8; CHARACTER_SET_LENGTH];
 /// to construct an array of u8 with [CHARACTER_SET_LENGTH].
 ///
 /// ```
-/// let my_set: CharacterSet = [...PUT SOME BYTES HERE...];
+/// let my_set: CharacterSet = [b' ', ...FILL IN THE CHARS...];
 /// let decoder = Decoder::<128>::new().with_character_set(my_set).build();
 /// ```
 ///
+pub type CharacterSet = [u8; CHARACTER_SET_LENGTH];
+
+/// Default international morse code characters. It includes English language letters, numbers and
+/// punctuation marks.
 pub const DEFAULT_CHARACTER_SET: CharacterSet = [
     b' ', b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H', b'I', b'J', b'K', b'L', b'M', b'N', b'O',
     b'P', b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X', b'Y', b'Z', b'1', b'2', b'3', b'4', b'5',
