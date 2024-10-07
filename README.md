@@ -120,6 +120,7 @@ All contributions will be licensed under the terms of MIT license shipped with t
 
 ## TODO
 * Complete TODOs written in the code. For example always return a `Result<>` from functions that can fail.
+* Make edit position cycling to the beginning optional. Currently edit position cycles to the beginning when overflows.
 * Support UTF-8 character set behind a feature flag that doesn't hurt embedded devices.
 * Support playing audio of encoded messages behind a feature flag.
 

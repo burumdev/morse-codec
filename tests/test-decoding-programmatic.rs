@@ -359,6 +359,25 @@ fn decoding_sos_with_custom_character_set() {
     }
 
     assert_eq!(message, [b'R', b'V', b'R']);
+
+    // Add a '?' character at the end for sanity check
+    decoder.signal_event(100, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(100, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(300, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(300, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(100, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(100, true);
+    decoder.signal_event(300, false);
+
+    let message_str = decoder.message.as_str();
+
+    // This should cycle back to the beginning for now.
+    println!("We tried to add a ? mark at the end. Message is {}", message_str);
 }
 
 #[test]

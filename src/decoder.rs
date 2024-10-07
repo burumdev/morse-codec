@@ -85,7 +85,7 @@ enum SignalDuration {
     Long(MilliSeconds),
     Other(MilliSeconds),
 }
-use SignalDuration::{Empty as SDEmpty, Long as SDLong, Other as SDOther, Short as SDShort};
+use SignalDuration::{Empty as SDEmpty, Short as SDShort, Long as SDLong, Other as SDOther};
 
 // Signal buffer length is morse array length + 1, because we need to be able to
 // resolve a character ending long signal (either 3x or word space 7x) at the end
