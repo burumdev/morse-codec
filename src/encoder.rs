@@ -243,7 +243,8 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
             str_slice.chars()
                 .filter(|ch| ch.is_ascii())
                 .for_each(|ch| {
-                    self.encode_character(&(ch as u8)).unwrap();
+                    let byte = ch as u8;
+                    self.encode_character(&byte).unwrap();
                 });
 
             Ok(())

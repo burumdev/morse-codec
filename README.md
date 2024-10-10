@@ -1,5 +1,5 @@
 <p align="center" style="padding: 25px 0">
-  <img width="279" height="240" src="https://raw.githubusercontent.com/burumdev/morse-codec/refs/heads/master/morse-logo.png" alt="morse-codec logo" />
+  <img width="279" height="240" style="max-width: 279px" src="https://raw.githubusercontent.com/burumdev/morse-codec/refs/heads/master/morse-logo.png" alt="morse-codec logo" />
 </p>
 
 # morse-codec
@@ -27,8 +27,6 @@ prepared morse signals.
 
 Receives morse signals and decodes them character by character
 to create a byte array message with constant max length.
-Empty characters will be filled with the const FILLER_BYTE and
-decoding errors will be filled with DECODING_ERROR_BYTE.
 Trade-offs to support no_std include:
 * No vectors or any other type of dynamic heap memory used, all data is plain old stack arrays.
 * We decode the signals character by character instead of creating a large buffer for all
@@ -62,7 +60,7 @@ decoder.signal_event(412, false);
 
 Morse code encoder to turn text into morse code text or signals.
 
-The encoder takes **&str** literals or character bytes and
+Encoder takes **&str** literals or character bytes and
 turns them into a fixed length byte array. Then client code can encode these characters
 to morse code either one by one, from slices, or all in one go.
 
