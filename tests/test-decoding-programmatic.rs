@@ -489,3 +489,117 @@ fn set_get_message_str() {
     println!("Message length after rewrite: {}", decoder.message.len());
     println!("Edit position after rewrite is at: {}", decoder.message.get_edit_pos());
 }
+
+#[test]
+fn message_position_clamping() {
+    const MSG_MAX: usize = 7;
+
+    println!("TEST DECODING WITH MESSAGE POSITION CLAMPING BEHAVIOUR");
+
+    let mut decoder = Decoder::<MSG_MAX>::new().with_message_pos_clamping().build();
+
+    // Adding SOS to message till it overflows
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_current_char_to_message();
+
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_current_char_to_message();
+
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_current_char_to_message();
+
+    decoder.add_current_char_to_message();
+
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_current_char_to_message();
+
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_current_char_to_message();
+
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_current_char_to_message();
+
+    // This 'A' should be added to the end.
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_current_char_to_message();
+
+    // This 'B' should be added to the end.
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_current_char_to_message();
+
+    let message = decoder.message.as_str();
+
+    println!();
+    println!("Message after decoding 'SOS SOS' in {} length message", MSG_MAX);
+    println!("{}", message);
+    println!();
+
+    assert_eq!(message, "SOS SOB");
+
+    println!("Now let's restore wrapping behaviour and add some 'A's at the end");
+    decoder.message.set_edit_position_clamp(false);
+    decoder.message.clear();
+
+    // Adding SOS to message till it overflows
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_current_char_to_message();
+
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_current_char_to_message();
+
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_current_char_to_message();
+
+    decoder.add_current_char_to_message();
+
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_current_char_to_message();
+
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_current_char_to_message();
+
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_current_char_to_message();
+
+    // This 'A' should be decoded and added to the start of the message.
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_current_char_to_message();
+
+    let message = decoder.message.as_str();
+
+    println!();
+    println!("Message after decoding 'SOS SOS' in {} length message with wrapping behaviour and adding 'A' at the end:", MSG_MAX);
+    println!("{}", message);
+    println!();
+
+    assert_eq!(message, "AOS SOS");
+}

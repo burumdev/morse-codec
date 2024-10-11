@@ -117,9 +117,10 @@ new feature before incorporating it and reduces the back and forth dialogue requ
 All contributions will be licensed under the terms of MIT license shipped with this library.
 
 ## TODO
-* Make edit position cycling to the beginning optional. Currently edit position cycles to the beginning when overflows.
 * Support UTF-8 character set behind a feature flag that doesn't hurt embedded devices.
 * Support playing audio of encoded messages behind a feature flag.
+* Support [Farnsworth](https://www.arrl.org/files/file/Technology/x9004008.pdf) learning mode. Similar to lazy mode but more standardized.
+This only involves gaps between letters and words so it can be a third option between Lazy mode and Accurate.
 
 ## License
 This work is licensed under terms of MIT license as described here: https://opensource.org/license/mit
