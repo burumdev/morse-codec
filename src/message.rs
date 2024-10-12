@@ -3,6 +3,7 @@
 //! Client code can use this to access and manipulate the
 //! internal message of [MorseDecoder] or [MorseEncoder]:
 //!
+//! ```ignore
 //! ```rust
 //! // Get a decoded message
 //! let decoded_message = decoder.message.as_str();

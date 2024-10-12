@@ -19,9 +19,11 @@
 //!   One way to fix the wrong decoding problems of 'T' character is to provide an initial reference short signal
 //!   length to the decoder. A good intermediate value is 100 milliseconds.
 //!
-//! ```
-//! const MSG_MAX = 64;
-//! let decoder = morse_codec::Decoder::<MSG_MAX>::new()
+//! ```rust
+//! use morse_codec::decoder::Decoder;
+//!
+//! const MSG_MAX: usize = 64;
+//! let mut decoder = Decoder::<MSG_MAX>::new()
 //!     .with_reference_short_ms(90)
 //!     .build();
 //!
@@ -40,7 +42,8 @@
 //! // At this point the character will be decoded and added to the message.
 //!
 //! // Resulting character will be 'A' or '.-' in morse code.
-//!
+//! let message = decoder.message.as_str();
+//! assert_eq!(message, "A");
 //! ```
 //!
 
@@ -217,6 +220,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
     ///
     /// If at one point you want to change it back to wrapping:
     ///
+    /// ```ignore
     /// ```rust
     /// decoder.message.set_edit_position_clamp(false);
     /// ```
@@ -420,14 +424,14 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
             let ch = self.get_char_from_morse_char(&self.current_character);
             self.message.add_char(ch);
 
+            // If message position is clamping then this should not do anything.
+            // at the end of message position.
+            // If wrapping then it should reset the position to 0, so above condition
+            // should pass next time.
+            self.message.shift_edit_right();
+
             self.reset_character();
         }
-
-        // If message position is clamping then this should not do anything.
-        // at the end of message position.
-        // If wrapping then it should reset the position to 0, so above condition
-        // should pass next time.
-        self.message.shift_edit_right();
     }
 
     /// Manually end a sequence of signals.

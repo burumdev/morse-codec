@@ -7,6 +7,33 @@
 //! Duration Multipliers [SDMArray] to calculate individual signal durations by the client code.
 //!
 //! This module is designed to be no_std compliant so it also should work on embedded platforms.
+//!
+//! ```rust
+//! use morse_codec::encoder::Encoder;
+//!
+//! const MSG_MAX: usize = 3;
+//! let mut encoder = Encoder::<MSG_MAX>::new()
+//!    // We have the message to encode ready and pass it to the builder.
+//!    // We pass true as second parameter to tell the encoder editing will
+//!    // continue from the end of this first string.
+//!    .with_message("SOS", true)
+//!    .build();
+//!
+//! // Encode the whole message
+//! encoder.encode_message_all();
+//!
+//! let encoded_charrays = encoder.get_encoded_message_as_morse_charrays();
+//!
+//! encoded_charrays.for_each(|charray| {
+//!    for ch in charray.unwrap().iter()
+//!        .filter(|ch| ch.is_some()) {
+//!            print!("{}", ch.unwrap() as char);
+//!        }
+//!
+//!    print!(" ");
+//! });
+//!
+//! // This should print "... --- ..."
 
 use crate::{
     message::Message,
@@ -112,6 +139,7 @@ impl<const MSG_MAX: usize> Encoder<MSG_MAX> {
     ///
     /// If at one point you want to change it back to wrapping again:
     ///
+    /// ```ignore
     /// ```rust
     /// encoder.message.set_edit_position_clamp(false);
     /// ```
@@ -236,7 +264,6 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
     /// and add it both to the message and encoded_message.
     pub fn encode_character(&mut self, ch: &u8) -> Result<(), &str> {
         let pos = self.message.get_edit_pos();
-        let result: Result<(), &str>;
 
         if pos < MSG_MAX {
             let ch_uppercase = self.encode(ch, pos);
@@ -245,23 +272,19 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
                 Ok(ch) => {
                     self.message.add_char(ch);
 
-                    result = Ok(());
+                    // If message position is clamping then this should not do anything
+                    // at the end of message position.
+                    // If wrapping then it should reset the position to 0, so above condition
+                    // should pass next time.
+                    self.message.shift_edit_right();
+
+                    Ok(())
                 },
-                Err(err) => result = Err(err)
+                Err(err) => Err(err)
             }
         } else {
-            result = Ok(());
+            Ok(())
         }
-
-        // If message position is clamping then this should not do anything
-        // at the end of message position.
-        // If wrapping then it should reset the position to 0, so above condition
-        // should pass next time.
-        if result.is_ok() {
-            self.message.shift_edit_right();
-        }
-
-        result
     }
 
     /// Encode a &str slice at the edit position

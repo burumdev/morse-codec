@@ -136,8 +136,8 @@ pub const MORSE_CODE_SET: [MorseCodeArray; CHARACTER_SET_LENGTH] = [
 /// It does not include special characters longer than 6 signals to keep arrays small. So no $ sign for ya.
 /// In order to change it and use a different mapping, client code can use [CharacterSet] type
 /// to construct an array of u8 with [CHARACTER_SET_LENGTH].
-///
-/// ```
+/// ```ignore
+/// ```rust
 /// let my_set: CharacterSet = [b' ', ...FILL IN THE CHARS...];
 /// let decoder = Decoder::<128>::new().with_character_set(my_set).build();
 /// ```

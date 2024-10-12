@@ -37,14 +37,16 @@ Trade-offs to support no_std include:
   length to the decoder. A good intermediate value is 100 milliseconds.
 
 ```rust
-const MSG_MAX = 64;
-let decoder = morse_codec::Decoder::<MSG_MAX>::new()
+use morse_codec::decoder::Decoder;
+
+const MSG_MAX: usize = 64;
+let mut decoder = Decoder::<MSG_MAX>::new()
     .with_reference_short_ms(90)
     .build();
 
-// We receive a short high signal from button.
+// We receive high signal from button. 100 ms is a short dit signal.
 decoder.signal_event(100, true);
-// We receive a short low signal from the button.
+// We receive a low signal from the button. 80 ms low signal is a signal space dit.
 decoder.signal_event(80, false);
 // 328 ms high long signal is a dah.
 decoder.signal_event(328, true);
@@ -53,8 +55,10 @@ decoder.signal_event(412, false);
 // At this point the character will be decoded and added to the message.
 
 // Resulting character will be 'A' or '.-' in morse code.
-
+let message = decoder.message.as_str();
+assert_eq!(message, "A");
 ```
+
 
 * **Encoder**
 
@@ -68,13 +72,15 @@ Encoded morse code can be retrieved as morse character arrays ie. ['.','-','.'] 
 Duration Multipliers **SDMArray** to calculate individual signal durations by the client code.
 
 ```rust
-const MSG_MAX = 3;
-let encoder = morse_codec::Encoder::<MSG_MAX>::new()
-    // We have the message to encode ready and pass it to the builder.
-    // We pass true as second parameter to tell the encoder editing will
-    // continue from the end of this first string.
-    .with_message("SOS", true)
-    .build();
+use morse_codec::encoder::Encoder;
+
+const MSG_MAX: usize = 3;
+let mut encoder = Encoder::<MSG_MAX>::new()
+   // We have the message to encode ready and pass it to the builder.
+   // We pass true as second parameter to tell the encoder editing will
+   // continue from the end of this first string.
+   .with_message("SOS", true)
+   .build();
 
 // Encode the whole message
 encoder.encode_message_all();
@@ -82,14 +88,15 @@ encoder.encode_message_all();
 let encoded_charrays = encoder.get_encoded_message_as_morse_charrays();
 
 encoded_charrays.for_each(|charray| {
-    for ch in charray.unwrap().iter()
-        .filter(|ch| ch.is_some()) {
-            print!("{}", ch.unwrap() as char);
-        }
+   for ch in charray.unwrap().iter()
+       .filter(|ch| ch.is_some()) {
+           print!("{}", ch.unwrap() as char);
+       }
 
-    print!(" ");
+   print!(" ");
 });
 
+// This should print "... --- ..."
 ```
 
 ## Running Tests
@@ -117,6 +124,7 @@ new feature before incorporating it and reduces the back and forth dialogue requ
 All contributions will be licensed under the terms of MIT license shipped with this library.
 
 ## TODO
+* <strike>Make edit position cycling to the beginning optional. Currently edit position cycles to the beginning when overflows.</strike>
 * Support UTF-8 character set behind a feature flag that doesn't hurt embedded devices.
 * Support playing audio of encoded messages behind a feature flag.
 * Support [Farnsworth](https://www.arrl.org/files/file/Technology/x9004008.pdf) learning mode. Similar to lazy mode but more standardized.
