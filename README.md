@@ -108,6 +108,15 @@ in practice.
 Use of `--nocapture` option with the test command is recommended. This will
 enable `println!()` outputs from the tests so that inputs and outputs can be observed.
 
+Running all tests at once is not recommended. Tests run asynchronously in Rust and this will
+result in intermingled `println!()` outputs. And I couldn't find a way to make `--test-threads 1`
+option to work reliably. Any ideas on that will be much appreciated.
+
+Let's get a list of available tests:
+```
+cargo test -- --list
+```
+And run tests with `--nocapture`
 ```
 cargo test decoding_live_lazy -- --nocapture
 ```
