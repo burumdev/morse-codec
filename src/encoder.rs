@@ -7,6 +7,33 @@
 //! Duration Multipliers [SDMArray] to calculate individual signal durations by the client code.
 //!
 //! This module is designed to be no_std compliant so it also should work on embedded platforms.
+//!
+//! ```rust
+//! use morse_codec::encoder::Encoder;
+//!
+//! const MSG_MAX: usize = 3;
+//! let mut encoder = Encoder::<MSG_MAX>::new()
+//!    // We have the message to encode ready and pass it to the builder.
+//!    // We pass true as second parameter to tell the encoder editing will
+//!    // continue from the end of this first string.
+//!    .with_message("SOS", true)
+//!    .build();
+//!
+//! // Encode the whole message
+//! encoder.encode_message_all();
+//!
+//! let encoded_charrays = encoder.get_encoded_message_as_morse_charrays();
+//!
+//! encoded_charrays.for_each(|charray| {
+//!    for ch in charray.unwrap().iter()
+//!        .filter(|ch| ch.is_some()) {
+//!            print!("{}", ch.unwrap() as char);
+//!        }
+//!
+//!    print!(" ");
+//! });
+//!
+//! // This should print "... --- ..."
 
 use crate::{
     message::Message,
@@ -77,7 +104,7 @@ impl<const MSG_MAX: usize> Encoder<MSG_MAX> {
     /// edit_pos_end means we'll continue encoding from the end of this string.
     /// If you pass false to it, we'll start from the beginning.
     pub fn with_message(mut self, message_str: &str, edit_pos_end: bool) -> Self {
-        self.message = Message::new(message_str, edit_pos_end);
+        self.message = Message::new(message_str, edit_pos_end, self.message.is_edit_clamped());
 
         self
     }
@@ -100,6 +127,24 @@ impl<const MSG_MAX: usize> Encoder<MSG_MAX> {
     /// **DON'T** use it for secure communication.
     pub fn with_character_set(mut self, character_set: CharacterSet) -> Self {
         self.character_set = character_set;
+
+        self
+    }
+
+    /// Change the wrapping behaviour of message position to clamping.
+    ///
+    /// This will prevent the position cycling back to 0 when overflows or
+    /// jumping forward to max when falls below 0. Effectively limiting the position
+    /// to move within the message length from 0 to message length maximum without jumps.
+    ///
+    /// If at one point you want to change it back to wrapping again:
+    ///
+    /// ```ignore
+    /// ```rust
+    /// encoder.message.set_edit_position_clamp(false);
+    /// ```
+    pub fn with_message_pos_clamping(mut self) -> Self {
+        self.message.set_edit_position_clamp(true);
 
         self
     }
@@ -214,20 +259,31 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
 // Public API
 impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
     // INPUTS
+
     /// Encode a single character at the edit position
     /// and add it both to the message and encoded_message.
     pub fn encode_character(&mut self, ch: &u8) -> Result<(), &str> {
         let pos = self.message.get_edit_pos();
-        let ch_uppercase = self.encode(ch, pos);
 
-        match ch_uppercase {
-            Ok(ch) => {
-                self.message.add_char(ch);
-                self.message.shift_edit_right();
+        if pos < MSG_MAX {
+            let ch_uppercase = self.encode(ch, pos);
 
-                Ok(())
-            },
-            Err(err) => Err(err),
+            match ch_uppercase {
+                Ok(ch) => {
+                    self.message.add_char(ch);
+
+                    // If message position is clamping then this should not do anything
+                    // at the end of message position.
+                    // If wrapping then it should reset the position to 0, so above condition
+                    // should pass next time.
+                    self.message.shift_edit_right();
+
+                    Ok(())
+                },
+                Err(err) => Err(err)
+            }
+        } else {
+            Ok(())
         }
     }
 

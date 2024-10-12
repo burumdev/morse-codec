@@ -28,6 +28,10 @@ fn print_morse_charray(mchar: MorseCharray) {
 }
 
 fn reencode_message(message: &str, morse_encoder: &mut MorseEncoder<MSG_MAX>) {
+    println!("*****************************");
+    println!("ENCODER REENCODES THE MESSAGE");
+    println!("*****************************");
+
     morse_encoder.message.set_message(message, false).unwrap();
     morse_encoder.encode_message_all();
     let encoded_charrays = morse_encoder.get_encoded_message_as_morse_charrays();
@@ -68,7 +72,7 @@ fn reencode_message(message: &str, morse_encoder: &mut MorseEncoder<MSG_MAX>) {
 }
 
 #[test]
-fn test_decode_encode_sdm() {
+fn decode_encode_sdm() {
     println!("TESTING DECODING AND THEN ENCODING DECODED MESSAGE");
     println!("Message maximum length is: {}", MSG_MAX);
 
@@ -106,10 +110,6 @@ fn test_decode_encode_sdm() {
                     println!();
                     println!("Decoder message: {}", message);
                     println!();
-
-                    println!("*****************************");
-                    println!("ENCODER REENCODES THE MESSAGE");
-                    println!("*****************************");
 
                     reencode_message(message, &mut morse_encoder);
                 } else if keys[0] == 16 { // Character 'q' for quitting

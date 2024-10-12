@@ -19,9 +19,11 @@
 //!   One way to fix the wrong decoding problems of 'T' character is to provide an initial reference short signal
 //!   length to the decoder. A good intermediate value is 100 milliseconds.
 //!
-//! ```
-//! const MSG_MAX = 64;
-//! let decoder = morse_codec::Decoder::<MSG_MAX>::new()
+//! ```rust
+//! use morse_codec::decoder::Decoder;
+//!
+//! const MSG_MAX: usize = 64;
+//! let mut decoder = Decoder::<MSG_MAX>::new()
 //!     .with_reference_short_ms(90)
 //!     .build();
 //!
@@ -40,7 +42,8 @@
 //! // At this point the character will be decoded and added to the message.
 //!
 //! // Resulting character will be 'A' or '.-' in morse code.
-//!
+//! let message = decoder.message.as_str();
+//! assert_eq!(message, "A");
 //! ```
 //!
 
@@ -48,13 +51,14 @@ use core::ops::RangeInclusive;
 
 use crate::{
     message::Message,
-    CharacterSet, MorseCodeArray,
+    CharacterSet,
+    MorseCodeArray,
     MorseSignal::{self, Long as L, Short as S},
-    DECODING_ERROR_BYTE,
     MORSE_CODE_SET,
     DEFAULT_CHARACTER_SET,
     MORSE_ARRAY_LENGTH,
     MORSE_DEFAULT_CHAR,
+    DECODING_ERROR_BYTE,
     LONG_SIGNAL_MULTIPLIER,
     WORD_SPACE_MULTIPLIER,
 };
@@ -146,7 +150,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
     /// edit_pos_end means we'll continue decoding from the end of this string.
     /// If you pass false to it, we'll start from the beginning.
     pub fn with_message(mut self, message_str: &str, edit_pos_end: bool) -> Self {
-        self.message = Message::new(message_str, edit_pos_end);
+        self.message = Message::new(message_str, edit_pos_end, self.message.is_edit_clamped());
 
         self
     }
@@ -208,6 +212,24 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
         self
     }
 
+    /// Change the wrapping behaviour of message position to clamping.
+    ///
+    /// This will prevent the position cycling back to 0 when overflows or
+    /// jumping forward to max when falls below 0. Effectively limiting the position
+    /// to move within the message length from 0 to message length maximum without jumps.
+    ///
+    /// If at one point you want to change it back to wrapping:
+    ///
+    /// ```ignore
+    /// ```rust
+    /// decoder.message.set_edit_position_clamp(false);
+    /// ```
+    pub fn with_message_pos_clamping(mut self) -> Self {
+        self.message.set_edit_position_clamp(true);
+
+        self
+    }
+
     /// Build and get yourself a shiny new [MorseDecoder].
     ///
     /// The ring is yours now...
@@ -248,8 +270,8 @@ pub struct MorseDecoder<const MSG_MAX: usize> {
     character_set: CharacterSet,
     signal_tolerance: f32,
     reference_short_ms: MilliSeconds,
-    // Internal stuff
     pub message: Message<MSG_MAX>,
+    // Internal stuff
     current_character: MorseCodeArray,
     signal_pos: usize,
     signal_buffer: SignalBuffer,
@@ -401,6 +423,11 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
         if self.message.get_edit_pos() < MSG_MAX {
             let ch = self.get_char_from_morse_char(&self.current_character);
             self.message.add_char(ch);
+
+            // If message position is clamping then this should not do anything.
+            // at the end of message position.
+            // If wrapping then it should reset the position to 0, so above condition
+            // should pass next time.
             self.message.shift_edit_right();
 
             self.reset_character();
@@ -409,7 +436,7 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
 
     /// Manually end a sequence of signals.
     ///
-    /// This decodes the current character and moves to the next one
+    /// This decodes the current character and moves to the next one.
     /// With end_word flag it will optionally add a space after it.
     /// Especially useful when client code can't determine if signal
     /// input by the operator ended, because no other high signal is

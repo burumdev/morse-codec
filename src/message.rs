@@ -3,6 +3,7 @@
 //! Client code can use this to access and manipulate the
 //! internal message of [MorseDecoder] or [MorseEncoder]:
 //!
+//! ```ignore
 //! ```rust
 //! // Get a decoded message
 //! let decoded_message = decoder.message.as_str();
@@ -30,6 +31,7 @@ use crate::{FILLER_BYTE, FILLER_CHAR};
 pub struct Message<const MSG_MAX: usize> {
     chars: [u8; MSG_MAX],
     edit_pos: usize,
+    clamp_edit_pos: bool,
 }
 
 impl<const MSG_MAX: usize> Default for Message<MSG_MAX> {
@@ -37,22 +39,24 @@ impl<const MSG_MAX: usize> Default for Message<MSG_MAX> {
         Self {
             chars: [FILLER_BYTE; MSG_MAX],
             edit_pos: 0,
+            clamp_edit_pos: false,
         }
     }
 }
 
 // Constructor with a starter string
 impl<const MSG_MAX: usize> Message<MSG_MAX> {
-    // Maximum index editing position can be at
-    const POS_MAX: usize = MSG_MAX - 1;
+    /// Maximum index editing position can be at
+    pub const POS_MAX: usize = MSG_MAX - 1;
 
     /// Get an instance of Message starting from an &str.
     ///
     /// edit_pos_end means client code wants to continue editing this
     /// text at the end.
-    pub fn new(message_str: &str, edit_pos_end: bool) -> Self {
+    pub fn new(message_str: &str, edit_pos_end: bool, clamp_edit_pos: bool) -> Self {
         let mut new_self = Self {
             chars: Self::str_to_bytes(message_str),
+            clamp_edit_pos,
             ..Self::default()
         };
 
@@ -112,6 +116,20 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
         self.edit_pos = pos.clamp(0, Self::POS_MAX);
     }
 
+    /// Change the clamping behaviour of the edit position to
+    /// wrapping (default) or clamping.
+    ///
+    /// With clamping set, when edit position is shifted to left or right,
+    /// it won't cycle forward to maximum position or revert back to zero position,
+    /// effectively remaining within the limits of the message no matter current position is.
+    pub fn set_edit_position_clamp(&mut self, clamp: bool) {
+        self.clamp_edit_pos = clamp;
+    }
+
+    pub fn is_edit_clamped(&self) -> bool {
+        self.clamp_edit_pos
+    }
+
     /// Returns current editing position.
     pub fn get_edit_pos(&self) -> usize {
         self.edit_pos
@@ -121,7 +139,7 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
     /// By default it will wrap to the end if position is 0
     pub fn shift_edit_left(&mut self) {
         self.edit_pos = match self.edit_pos {
-            0 => Self::POS_MAX,
+            0 => if self.clamp_edit_pos { 0 } else { Self::POS_MAX },
             p => p - 1,
         }
     }
@@ -130,7 +148,7 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
     /// By default it will wrap to the beginning if position is POS_MAX
     pub fn shift_edit_right(&mut self) {
         self.edit_pos = match self.edit_pos {
-            p if p == Self::POS_MAX => 0,
+            p if p == Self::POS_MAX => if self.clamp_edit_pos { Self::POS_MAX } else { 0 },
             p => p + 1,
         }
     }

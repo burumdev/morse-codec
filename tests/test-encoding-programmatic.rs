@@ -230,3 +230,68 @@ fn encoding_fox_play_sdm() {
     });
 }
 
+#[test]
+fn message_position_clamping() {
+    const MSG_MAX: usize = 4;
+
+    println!("TESTING ENCODING WITH A CLAMPED EDIT POSITION");
+    println!("Message max length is {}", MSG_MAX);
+    println!();
+
+    let mut encoder = Encoder::<MSG_MAX>::new().with_message_pos_clamping().build();
+
+    encoder.encode_character(&b'R').unwrap();
+    encoder.encode_character(&b'U').unwrap();
+    encoder.encode_character(&b'S').unwrap();
+    encoder.encode_character(&b'T').unwrap();
+
+    let message = encoder.message.as_str();
+
+    println!("Message in the encoder: {}", message);
+
+    assert_eq!(message, "RUST");
+
+    let encoded_charrays = encoder.get_encoded_message_as_morse_charrays();
+    println!("Message as morse code:");
+    encoded_charrays.for_each(|charray| print_morse_charray(charray.unwrap()));
+
+    println!();
+
+    encoder.encode_character(&b'.').unwrap();
+    let message = encoder.message.as_str();
+    println!("Message in the encoder after adding a dot: {}", message);
+
+    assert_eq!(message, "RUS.");
+
+    println!();
+    println!("We clear the message and restart with a wrapping behaviour this time.");
+    encoder.message.clear();
+    encoder.message.set_edit_position_clamp(false);
+
+    encoder.encode_character(&b'R').unwrap();
+    encoder.encode_character(&b'U').unwrap();
+    encoder.encode_character(&b'S').unwrap();
+    encoder.encode_character(&b'T').unwrap();
+
+    let message = encoder.message.as_str();
+
+    println!("Message in the wrapping encoder: {}", message);
+
+    assert_eq!(message, "RUST");
+
+    let encoded_charrays = encoder.get_encoded_message_as_morse_charrays();
+    println!("Message in wrapping encoder as morse code:");
+    encoded_charrays.for_each(|charray| print_morse_charray(charray.unwrap()));
+
+    println!();
+
+    encoder.encode_character(&b'.').unwrap();
+    let message = encoder.message.as_str();
+    println!("Message in the wrapping encoder after adding a dot: {}", message);
+
+    assert_eq!(message, ".UST");
+
+    let encoded_charrays = encoder.get_encoded_message_as_morse_charrays();
+    println!("Message in wrapping encoder as morse code:");
+    encoded_charrays.for_each(|charray| print_morse_charray(charray.unwrap()));
+}
