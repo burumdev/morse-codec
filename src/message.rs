@@ -1,10 +1,9 @@
 //! Message struct to hold decoded message or message to be encoded.
 //!
 //! Client code can use this to access and manipulate the
-//! internal message of [MorseDecoder] or [MorseEncoder]:
+//! internal message of MorseDecoder or MorseEncoder:
 //!
 //! ```ignore
-//! ```rust
 //! // Get a decoded message
 //! let decoded_message = decoder.message.as_str();
 //! let decoded_message_bytes = decoder.message.as_bytes();
@@ -15,7 +14,7 @@
 //!
 //! // Set message to something different
 //! // and continue decoding from the end
-//! decoder.set_message("SOME INITIAL MESSAGE", true);
+//! decoder.message.set_message("SOME INITIAL MESSAGE", true);
 //!
 //! // We continue sending signals
 //! decoder.signal_event(125, true);

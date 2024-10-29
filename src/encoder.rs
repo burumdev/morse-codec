@@ -140,7 +140,6 @@ impl<const MSG_MAX: usize> Encoder<MSG_MAX> {
     /// If at one point you want to change it back to wrapping again:
     ///
     /// ```ignore
-    /// ```rust
     /// encoder.message.set_edit_position_clamp(false);
     /// ```
     pub fn with_message_pos_clamping(mut self) -> Self {

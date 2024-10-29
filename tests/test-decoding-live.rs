@@ -97,3 +97,13 @@ fn decoding_live_lazy() {
 fn decoding_live_100_ms() {
     decoding_live(Precision::Lazy, 100);
 }
+
+#[test]
+fn decoding_live_farnsworth_half() {
+    decoding_live(Precision::Farnsworth(0.5), 100);
+}
+
+#[test]
+fn decoding_live_farnsworth_quarter() {
+    decoding_live(Precision::Farnsworth(0.25), 100);
+}
