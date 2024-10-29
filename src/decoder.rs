@@ -1,5 +1,6 @@
 //! Live decoder for morse code that converts morse code to ASCII characters. Supports real-time decoding of incoming signals and decoding
-//! prepared morse signals.
+//! prepared morse signals. This module supports Farnsworth timing mode and can be used for morse
+//! code practice.
 //!
 //! Receives morse signals and decodes them character by character
 //! to create a char array (charray) message with constant max length.
@@ -367,12 +368,10 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
         tolerance_range: &RangeInclusive<MilliSeconds>,
         is_high: bool,
     ) -> SignalDuration {
-        let short_tolerance_range = self.signal_tolerance_range(self.reference_short_ms);
-
-        let resolve_accurate = || -> SignalDuration {
+        let resolve_accurate_or_farnsworth = |long_ms: MilliSeconds| -> SignalDuration {
             if tolerance_range.contains(&self.reference_short_ms) {
                 SDShort(duration_ms)
-            } else if tolerance_range.contains(&self.long_signal_ms()) {
+            } else if tolerance_range.contains(&long_ms) {
                 SDLong(duration_ms)
             } else {
                 SDOther(duration_ms)
@@ -381,7 +380,9 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
 
         match self.precision {
             Lazy => {
+                let short_tolerance_range = self.signal_tolerance_range(self.reference_short_ms);
                 let short_range_end = short_tolerance_range.end() + 50; // 50 ms padding gives better results with humans
+
                 if (0u16..short_range_end).contains(&duration_ms) {
                     SDShort(duration_ms)
                 } else if (short_range_end..self.word_space_ms()).contains(&duration_ms) {
@@ -391,21 +392,15 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
                 }
             }
             Accurate => {
-                resolve_accurate()
+                resolve_accurate_or_farnsworth(self.long_signal_ms())
             }
             Farnsworth(factor) => {
                 if is_high {
-                    resolve_accurate()
+                    resolve_accurate_or_farnsworth(self.long_signal_ms())
                 } else {
-                    let farnsworth_long = self.calculate_farnsworth_short(factor) * 3;
+                    let farnsworth_long = self.calculate_farnsworth_short(factor) * LONG_SIGNAL_MULTIPLIER;
 
-                    if tolerance_range.contains(&self.reference_short_ms) {
-                        SDShort(duration_ms)
-                    } else if tolerance_range.contains(&farnsworth_long) {
-                        SDLong(duration_ms)
-                    } else {
-                        SDOther(duration_ms)
-                    }
+                    resolve_accurate_or_farnsworth(farnsworth_long)
                 }
             }
         }

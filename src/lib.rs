@@ -3,9 +3,11 @@
 //!
 //! You can create messages by sending individual high and low signals in milliseconds to decoder,
 //! from the keyboard, mouse clicks, or a button connected to some embedded device.
+//! Decoder supports three precision (difficulty) modes. Lazy (easiest), Accurate(Hardest) and
+//! Farnsworth mode (somewhere inbetween)
 //!
 //! Use the encoder to turn your messages or characters into morse code strings or create a
-//! sequence of signals from the encoder to drive an external component such as an LED, step motor or speaker.
+//! sequence of signals to drive an external component such as an LED, step motor or speaker.
 //!
 //! # Features
 //! * Decoder
