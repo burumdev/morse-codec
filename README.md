@@ -2,11 +2,11 @@
   <img width="279" height="240" style="max-width: 279px" src="https://raw.githubusercontent.com/burumdev/morse-codec/refs/heads/master/morse-logo.png" alt="morse-codec logo" />
 </p>
 
-<div style="display: flex; justify-content: center; margin: 20px 0">
-  <div>
+<span style="display: flex; justify-content: center; margin: 20px 0">
+  <span>
 ![Crates.io License](https://img.shields.io/crates/l/morse-codec) ![Crates.io Version](https://img.shields.io/crates/v/morse-codec) ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/burumdev/morse-codec/rust.yml) ![Crates.io Total Downloads](https://img.shields.io/crates/d/morse-codec)
-  </div>
-</div>
+  </span>
+</span>
 
 # morse-codec
 Rust library for live decoding and encoding of morse code messages. Supports multiple embedded devices and operating systems by being no_std.
