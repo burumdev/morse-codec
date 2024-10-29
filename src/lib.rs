@@ -3,9 +3,11 @@
 //!
 //! You can create messages by sending individual high and low signals in milliseconds to decoder,
 //! from the keyboard, mouse clicks, or a button connected to some embedded device.
+//! Decoder supports three precision (difficulty) modes. Lazy (easiest), Accurate(Hardest) and
+//! Farnsworth mode (somewhere inbetween)
 //!
 //! Use the encoder to turn your messages or characters into morse code strings or create a
-//! sequence of signals from the encoder to drive an external component such as an LED, step motor or speaker.
+//! sequence of signals to drive an external component such as an LED, step motor or speaker.
 //!
 //! # Features
 //! * Decoder
@@ -137,7 +139,6 @@ pub const MORSE_CODE_SET: [MorseCodeArray; CHARACTER_SET_LENGTH] = [
 /// In order to change it and use a different mapping, client code can use [CharacterSet] type
 /// to construct an array of u8 with [CHARACTER_SET_LENGTH].
 /// ```ignore
-/// ```rust
 /// let my_set: CharacterSet = [b' ', ...FILL IN THE CHARS...];
 /// let decoder = Decoder::<128>::new().with_character_set(my_set).build();
 /// ```

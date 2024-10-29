@@ -1,5 +1,6 @@
 //! Live decoder for morse code that converts morse code to ASCII characters. Supports real-time decoding of incoming signals and decoding
-//! prepared morse signals.
+//! prepared morse signals. This module supports Farnsworth timing mode and can be used for morse
+//! code practice.
 //!
 //! Receives morse signals and decodes them character by character
 //! to create a char array (charray) message with constant max length.
@@ -63,7 +64,7 @@ use crate::{
     WORD_SPACE_MULTIPLIER,
 };
 
-/// Decoding precision is either Lazy or Accurate.
+/// Decoding precision is either Lazy, Accurate or Farnsworth(speed_reduction_factor: f32).
 ///
 /// If Lazy is selected, short and long signals will be considered to saturate their
 /// fields on the extreme ends. For example a short signal can be 1 ms to short range end
@@ -72,13 +73,23 @@ use crate::{
 /// of lower tolerance value and higher tolerance value. Default value for tolerance factor is 0.5.
 /// So if a short signal is expected to be 100 ms, correct decoding signal can be anywhere between
 /// 50 ms to 150 ms, but not 10 ms.
+///
 /// Default precision is Lazy, as it's the most human friendly precision.
+///
+/// Farnsworth precision means extra delays will be added to spaces between characters and
+/// words but character decoding speed is not affected.
+/// Difference between current decoding speed and a reduced decoding speed will determine
+/// the length of the delays. The reduced decoding speed is determined by the factor value
+/// passed to the enum variant Farnsworth. This value will be multiplied by the current speed
+/// to find a reduction in overall speed. Factor value is clamped between 0.01 and 0.99.
 #[derive(Debug, PartialEq)]
 pub enum Precision {
     Lazy,
     Accurate,
+    Farnsworth(f32),
 }
-use Precision::{Accurate, Lazy};
+
+use Precision::{Lazy, Accurate, Farnsworth};
 
 type MilliSeconds = u16;
 
@@ -167,10 +178,30 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
 
     /// Set decoder precision.
     ///
-    /// Precision::Lazy is more human friendly, Precision::Accurate is for learning
-    /// or a challenge contest.
+    /// * Precision::Lazy is more human friendly,
+    /// * Precision::Accurate is for learning or a challenge - contest.
+    /// * Precision::Farnsworth means extra delays will be added to spaces between characters and
+    ///     words but intracharacter speed is not affected.
+    ///     Difference between current decoding speed and a reduced decoding speed will determine
+    ///     the length of the delays. The reduced decoding speed is determined by the factor value
+    ///     passed to the enum variant Farnsworth. This value will be multiplied by the current speed
+    ///     to find a reduction in overall speed. Factor value will be clamped between 0.01 and 0.99.
+    ///
+    /// As an example for Farnsworth precision, let's say
+    /// client code wants a reduction to half the current speed:
+    /// ```ignore
+    /// let decoder = Decoder::new().with_precision(Precision::Farnsworth(0.5)).build();
+    /// // At this point if our words per minute speed is 20,
+    /// // overall transmission speed will be reduced to 10 WPM
+    /// // preserving the character speed at 20 WPM but distributing
+    /// // the difference in time among spaces between chars and words.
+    /// ```
     pub fn with_precision(mut self, precision: Precision) -> Self {
-        self.precision = precision;
+        if let Farnsworth(factor) = precision {
+            self.precision = Farnsworth(factor.clamp(0.01, 0.99));
+        } else {
+            self.precision = precision;
+        }
 
         self
     }
@@ -221,7 +252,6 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
     /// If at one point you want to change it back to wrapping:
     ///
     /// ```ignore
-    /// ```rust
     /// decoder.message.set_edit_position_clamp(false);
     /// ```
     pub fn with_message_pos_clamping(mut self) -> Self {
@@ -336,12 +366,23 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
         &mut self,
         duration_ms: MilliSeconds,
         tolerance_range: &RangeInclusive<MilliSeconds>,
+        is_high: bool,
     ) -> SignalDuration {
-        let short_tolerance_range = self.signal_tolerance_range(self.reference_short_ms);
+        let resolve_accurate_or_farnsworth = |long_ms: MilliSeconds| -> SignalDuration {
+            if tolerance_range.contains(&self.reference_short_ms) {
+                SDShort(duration_ms)
+            } else if tolerance_range.contains(&long_ms) {
+                SDLong(duration_ms)
+            } else {
+                SDOther(duration_ms)
+            }
+        };
 
         match self.precision {
             Lazy => {
+                let short_tolerance_range = self.signal_tolerance_range(self.reference_short_ms);
                 let short_range_end = short_tolerance_range.end() + 50; // 50 ms padding gives better results with humans
+
                 if (0u16..short_range_end).contains(&duration_ms) {
                     SDShort(duration_ms)
                 } else if (short_range_end..self.word_space_ms()).contains(&duration_ms) {
@@ -351,12 +392,15 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
                 }
             }
             Accurate => {
-                if tolerance_range.contains(&self.reference_short_ms) {
-                    SDShort(duration_ms)
-                } else if tolerance_range.contains(&self.long_signal_ms()) {
-                    SDLong(duration_ms)
+                resolve_accurate_or_farnsworth(self.long_signal_ms())
+            }
+            Farnsworth(factor) => {
+                if is_high {
+                    resolve_accurate_or_farnsworth(self.long_signal_ms())
                 } else {
-                    SDOther(duration_ms)
+                    let farnsworth_long = self.calculate_farnsworth_short(factor) * LONG_SIGNAL_MULTIPLIER;
+
+                    resolve_accurate_or_farnsworth(farnsworth_long)
                 }
             }
         }
@@ -383,13 +427,34 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
     }
 
     fn word_space_ms(&self) -> MilliSeconds {
-        let multiplier = if self.precision == Lazy {
-            9
-        } else {
-            WORD_SPACE_MULTIPLIER
+        let multiplier = match self.precision {
+            // Adding some padding to the end of word space to aid the lazy sleazy operator
+            Lazy => WORD_SPACE_MULTIPLIER + 1,
+            Accurate => WORD_SPACE_MULTIPLIER,
+            // Early return if we have a Farnsworth precision.
+            // We calculate the word space from a slower
+            // farnsworth short duration and return it.
+            Farnsworth(factor) => {
+                return self.calculate_farnsworth_short(factor) * WORD_SPACE_MULTIPLIER
+            }
         };
 
         self.reference_short_ms * multiplier
+    }
+
+    fn calculate_farnsworth_short(&self, speed_reduction_factor: f32) -> MilliSeconds {
+        // WPM stands for Words per Minute
+        let current_wpm = 1.2 / (self.reference_short_ms as f32 / 1000.0);
+        //println!("FARNSWORTH: current WPM: {}", current_wpm);
+
+        let reduced_wpm = current_wpm * speed_reduction_factor;
+        //println!("FARNSWORTH: reduced WPM: {}", reduced_wpm);
+
+        let delay_time_ms = (((60.0 * current_wpm) - (37.2 * reduced_wpm)) / (current_wpm * reduced_wpm)) * 1000.0;
+        //println!("FARNSWORTH: current reference short: {}", self.reference_short_ms);
+        //println!("FARNSWORTH: delay time total: {} and short: {}", delay_time_ms, (delay_time_ms / 19.0) as MilliSeconds);
+
+        (delay_time_ms / 19.0) as MilliSeconds
     }
 }
 
@@ -481,7 +546,7 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
                         //DBG
                         //println!("Initial ref short is set to {}", duration_ms);
                     } else {
-                        let resolved_duration = self.resolve_signal_duration(duration_ms, &tolerance_range);
+                        let resolved_duration = self.resolve_signal_duration(duration_ms, &tolerance_range, is_high);
 
                         //DBG
                         //println!("\tINTIAL HIGH: tolerance range: {:?}, position is: {}, resolved duration: {:?}, ref short is: {}", tolerance_range, pos, resolved_duration, self.reference_short_ms);
@@ -508,7 +573,7 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
                     self.update_reference_short_ms(duration_ms);
                 }
 
-                let resolved_duration = self.resolve_signal_duration(duration_ms, &tolerance_range);
+                let resolved_duration = self.resolve_signal_duration(duration_ms, &tolerance_range, is_high);
 
                 //DBG
                 //println!("LOW SIGNAL: tolerance range: {:?}, position is: {}, resolved duration: {:?}, ref short is: {}", tolerance_range, _pos, resolved_duration, self.reference_short_ms);
@@ -544,7 +609,7 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
             // The reason why we check at this position starting from index 2+ is that
             // we get a better calibrated short signal from the low signal before it (index 1)
             pos if pos < SIGNAL_BUFFER_LENGTH && is_high => {
-                let resolved_duration = self.resolve_signal_duration(duration_ms, &tolerance_range);
+                let resolved_duration = self.resolve_signal_duration(duration_ms, &tolerance_range, is_high);
 
                 //DBG
                 //println!("\tHIGH SIGNAL: tolerance range: {:?}, position is: {}, resolved duration: {:?}, ref short is: {}", tolerance_range, pos, resolved_duration, self.reference_short_ms);
