@@ -444,7 +444,7 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
 
     fn calculate_farnsworth_short(&self, speed_reduction_factor: f32) -> MilliSeconds {
         // WPM stands for Words per Minute
-        let current_wpm = 1.2 / (self.reference_short_ms as f32 / 1000.0);
+        let current_wpm = self.get_wpm() as f32;
         //println!("FARNSWORTH: current WPM: {}", current_wpm);
 
         let reduced_wpm = current_wpm * speed_reduction_factor;
@@ -467,6 +467,12 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
     /// it might be useful for the client code.
     pub fn get_reference_short(&self) -> MilliSeconds {
         self.reference_short_ms
+    }
+
+    /// Returns the current signal entry speed in
+    /// Words Per Minute format.
+    pub fn get_wpm(&self) -> u16 {
+        (1.2 / (self.reference_short_ms as f32 / 1000.0)) as u16
     }
 
     /// Directly add a prepared signal to the character.
