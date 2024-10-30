@@ -63,6 +63,7 @@ fn decoding_live(precision: Precision, initial_short: u16) {
                             print!("{}", message[i] as char);
                         }
                         println!();
+                        println!("Current speed in Words Per Minute is {}", decoder.get_wpm());
                     }
                 } else if keys[0] == 16 { // Character 'q' for quitting
                     break;
