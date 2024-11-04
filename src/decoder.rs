@@ -108,14 +108,6 @@ use SignalDuration::{Empty as SDEmpty, Short as SDShort, Long as SDLong, Other a
 const SIGNAL_BUFFER_LENGTH: usize = MORSE_ARRAY_LENGTH + 1;
 type SignalBuffer = [SignalDuration; SIGNAL_BUFFER_LENGTH];
 
-const SINGLE_SHORT_SIGNAL_MORSE_CHAR: MorseCodeArray = [Some(S), None, None, None, None, None];
-const SINGLE_LONG_SIGNAL_MORSE_CHAR: MorseCodeArray = [Some(L), None, None, None, None, None];
-
-struct LastSingleSignalLetter {
-    index: usize,
-    duration: MilliSeconds,
-}
-
 /// This is the builder, or public interface of the decoder using builder pattern.
 /// It builds a MorseDecoder which is the concrete implementation and returns it with build().
 /// For details on how to use the decoder, refer to [MorseDecoder] documentation.
@@ -130,7 +122,6 @@ pub struct Decoder<const MSG_MAX: usize> {
     current_character: MorseCodeArray,
     signal_pos: usize,
     signal_buffer: SignalBuffer,
-    last_single_signal_letter: Option<LastSingleSignalLetter>,
 }
 
 impl<const MSG_MAX: usize> Default for Decoder<MSG_MAX> {
@@ -152,7 +143,6 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
             current_character: MORSE_DEFAULT_CHAR,
             signal_pos: 0,
             signal_buffer: [SDEmpty; SIGNAL_BUFFER_LENGTH],
-            last_single_signal_letter: None,
         }
     }
 
@@ -273,7 +263,6 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
             current_character,
             signal_pos,
             signal_buffer,
-            last_single_signal_letter,
         } = self;
 
         MorseDecoder::<MSG_MAX> {
@@ -285,7 +274,6 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
             current_character,
             signal_pos,
             signal_buffer,
-            last_single_signal_letter,
         }
     }
 }
@@ -305,7 +293,6 @@ pub struct MorseDecoder<const MSG_MAX: usize> {
     current_character: MorseCodeArray,
     signal_pos: usize,
     signal_buffer: SignalBuffer,
-    last_single_signal_letter: Option<LastSingleSignalLetter>,
 }
 
 // Private stuff.. Don' look at it
@@ -331,7 +318,6 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
 
     fn decode_signal_buffer(&mut self) -> MorseCodeArray {
         let mut morse_array: MorseCodeArray = MORSE_DEFAULT_CHAR;
-        let mut short_ms = 0;
 
         //DBG
         //println!("Signal buffer decoding: {:?}", self.signal_buffer);
@@ -341,23 +327,12 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
             .take(6)
             .enumerate()
             .for_each(|(i, signal)| match signal {
-                SDShort(sms) => {
+                SDShort(_) => {
                     morse_array[i] = Some(S);
-                    short_ms = *sms;
                 }
                 SDLong(_) => morse_array[i] = Some(L),
                 _ => {}
             });
-
-        // If the char got decoded as a single short signal, we save it to a buffer
-        // for later checking if it was a single long signal instead. For example in English
-        // character set; If the letter is an 'E' we save it for future checking. Maybe it's not an E but a T
-        if morse_array == SINGLE_SHORT_SIGNAL_MORSE_CHAR {
-            self.last_single_signal_letter = Some(LastSingleSignalLetter {
-                index: self.message.get_edit_pos(),
-                duration: short_ms,
-            });
-        }
 
         morse_array
     }
@@ -588,13 +563,6 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
                     SDLong(_) => {
                         //DBG
                         //println!("END CHARACTER --------------");
-
-                        if let Some(last_single) = &self.last_single_signal_letter {
-                            if tolerance_range.contains(&last_single.duration) {
-                                self.message.put_char_at(last_single.index, self.get_char_from_morse_char(&SINGLE_LONG_SIGNAL_MORSE_CHAR));
-                                self.last_single_signal_letter = None;
-                            }
-                        }
 
                         self.signal_event_end(false);
                     }
