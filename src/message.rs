@@ -252,7 +252,7 @@ impl<'a, const MSG_MAX: usize> Iterator for MessageIterator<'a, MSG_MAX> {
     type Item = &'a u8;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.message.chars.len() {
+        if self.index < self.message.len() {
             let result = Some(&self.message.chars[self.index]);
             self.index += 1;
 
