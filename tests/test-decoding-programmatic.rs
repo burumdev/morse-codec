@@ -4,7 +4,9 @@ use morse_codec::{
         Precision,
     },
     CharacterSet,
-    MorseSignal::{ Long as L, Short as S }, FILLER_BYTE,
+    MorseSignal::{ Long as L, Short as S },
+    FILLER,
+    Character,
 };
 
 #[test]
@@ -37,12 +39,16 @@ fn direct_signal_entry_sos() {
     let message_length = decoder.message.len();
     println!("Message length: {:?}", message_length);
 
-    let message = decoder.message.as_bytes();
+    let message = decoder.message.as_charray();
     for i in 0..message_length {
         println!("Message letter: {}", message[i] as char);
     }
 
+    #[cfg(not(feature = "utf8"))]
     assert_eq!(message, [b'S', b'O', b'S']);
+
+    #[cfg(feature = "utf8")]
+    assert_eq!(message, ['S', 'O', 'S']);
 }
 
 // Create a message containing two SOS words separated by a word space
@@ -99,12 +105,16 @@ fn decoding_double_sos() {
     let message_length = decoder.message.len();
     println!("Message length: {:?}", message_length);
 
-    let message = decoder.message.as_bytes();
+    let message = decoder.message.as_charray();
     for i in 0..message_length {
         println!("Message letter: {}", message[i] as char);
     }
 
-    assert_eq!(message, [b'S', b'O', b'S', b' ', b'S', b'O', b'S', FILLER_BYTE]);
+    #[cfg(not(feature = "utf8"))]
+    assert_eq!(message, [b'S', b'O', b'S', b' ', b'S', b'O', b'S', FILLER]);
+
+    #[cfg(feature = "utf8")]
+    assert_eq!(message, ['S', 'O', 'S', ' ', 'S', 'O', 'S', FILLER]);
 }
 
 // Create a message with the words "INM TES ETS SET ET TE E T"
@@ -218,18 +228,30 @@ fn decoding_bug_prone() {
     let message_length = decoder.message.len();
     println!("Message length: {:?}", message_length);
 
-    let message = decoder.message.as_bytes();
+    let message = decoder.message.as_charray();
     for i in 0..message_length {
         println!("Message letter: {}", message[i] as char);
     }
 
+    #[cfg(not(feature = "utf8"))]
     assert_eq!(
         message,
         [
             b'I', b'N', b'M', b' ', b'T', b'E', b'S', b' ', b'E',
             b'T', b'S', b' ', b'S', b'E', b'T', b' ', b'E', b'T',
             b' ', b'T', b'E', b' ', b'E', b' ', b'T',
-            FILLER_BYTE, FILLER_BYTE, FILLER_BYTE, FILLER_BYTE, FILLER_BYTE, FILLER_BYTE, FILLER_BYTE
+            FILLER, FILLER, FILLER, FILLER, FILLER, FILLER, FILLER
+        ]
+    );
+
+    #[cfg(feature = "utf8")]
+    assert_eq!(
+        message,
+        [
+            'I', 'N', 'M', ' ', 'T', 'E', 'S', ' ', 'E',
+            'T', 'S', ' ', 'S', 'E', 'T', ' ', 'E', 'T',
+            ' ', 'T', 'E', ' ', 'E', ' ', 'T',
+            FILLER, FILLER, FILLER, FILLER, FILLER, FILLER, FILLER
         ]
     );
 }
@@ -249,7 +271,7 @@ fn decoding_single_e() {
     let message_length = decoder.message.len();
     println!("Message length: {:?}", message_length);
 
-    let message = decoder.message.as_bytes();
+    let message = decoder.message.as_charray();
     for i in 0..message_length {
         println!("Message letter: {}", message[i] as char);
     }
@@ -275,7 +297,7 @@ fn decoding_single_t() {
     let message_length = decoder.message.len();
     println!("Message length: {:?}", message_length);
 
-    let message = decoder.message.as_bytes();
+    let message = decoder.message.as_charray();
     for i in 0..message_length {
         println!("Message letter: {}", message[i] as char);
     }
@@ -300,7 +322,7 @@ fn decoding_single_t_default_short_ms() {
     let message_length = decoder.message.len();
     println!("Message length: {:?}", message_length);
 
-    let message = decoder.message.as_bytes();
+    let message = decoder.message.as_charray();
     for i in 0..message_length {
         println!("Message letter: {}", message[i] as char);
     }
@@ -312,12 +334,22 @@ fn decoding_single_t_default_short_ms() {
 fn decoding_sos_with_custom_character_set() {
     const MESSAGE_MAX_LENGTH: usize = 3;
 
+    #[cfg(not(feature = "utf8"))]
     let character_set: CharacterSet = [
         b' ',
         b'I', b'U', b'C', b'E', b'D', b'F', b'Z', b'P', b'A', b'J', b'K', b'X', b'T', b'N', b'V', b'H', b'Q', b'S', b'R',
         b'M', b'B', b'O', b'W', b'L', b'Y', b'G',
         b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'0',
         b',', b'?', b':', b'-', b'"', b'(', b'=', b'X', b'.', b';', b'/', b'\'', b'_', b')', b'+', b'@',
+    ];
+
+    #[cfg(feature = "utf8")]
+    let character_set: CharacterSet = [
+        ' ',
+        'I', 'U', 'C', 'E', 'D', 'F', 'Z', 'P', 'A', 'J', 'K', 'X', 'T', 'N', 'V', 'H', 'Q', 'S', 'R',
+        'M', 'B', 'O', 'W', 'L', 'Y', 'G',
+        '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+        ',', '?', ':', '-', '"', '(', '=', 'X', '.', ';', '/', '\'', '_', ')', '+', '@',
     ];
 
     println!("TEST DECODING WITH CUSTOM CHARACTER SET:");
@@ -353,12 +385,16 @@ fn decoding_sos_with_custom_character_set() {
     let message_length = decoder.message.len();
     println!("Message length: {:?}", message_length);
 
-    let message = decoder.message.as_bytes();
+    let message = decoder.message.as_charray();
     for i in 0..message_length {
         println!("Message letter: {}", message[i] as char);
     }
 
+    #[cfg(not(feature = "utf8"))]
     assert_eq!(message, [b'R', b'V', b'R']);
+
+    #[cfg(feature = "utf8")]
+    assert_eq!(message, ['R', 'V', 'R']);
 
     // Add a '?' character at the end for sanity check
     decoder.signal_event(100, true);
@@ -414,12 +450,12 @@ fn decoding_with_starter_message() {
     let message_length = decoder.message.len();
     println!("Message length: {:?}", message_length);
 
-    let message = decoder.message.as_bytes();
+    let message = decoder.message.as_charray();
     for i in 0..message_length {
         println!("Message letter: {}", message[i] as char);
     }
 
-    assert_eq!(message.into_iter().take(message_length).rev().collect::<Vec<u8>>()[..3], [b'S', b'O', b'S']);
+    assert_eq!(message.into_iter().take(message_length).rev().collect::<Vec<Character>>()[..3], [b'S' as Character, 'O' as Character, 'S' as Character]);
 
     println!("We set the message again to some text, but start from the beginning this time.");
 
@@ -449,12 +485,16 @@ fn decoding_with_starter_message() {
     let message_length = decoder.message.len();
     println!("Message length: {:?}", message_length);
 
-    let message = decoder.message.as_bytes();
+    let message = decoder.message.as_charray();
     for i in 0..message_length {
         println!("Message letter: {}", message[i] as char);
     }
 
+    #[cfg(not(feature = "utf8"))]
     assert_eq!(message[..9], [b'S', b'O', b'S', b' ', b'T', b'H', b'E', b'R', b'E']);
+
+    #[cfg(feature = "utf8")]
+    assert_eq!(message[..9], ['S', 'O', 'S', ' ', 'T', 'H', 'E', 'R', 'E']);
 }
 
 #[test]

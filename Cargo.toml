@@ -10,9 +10,10 @@ keywords = ["morse", "encoder", "decoder", "no_std", "embedded"]
 categories = ["embedded", "no-std::no-alloc", "encoding", "text-processing", "accessibility"]
 
 [features]
-default = ["decoder", "encoder"]
+default = ["decoder", "encoder", "utf8"]
 decoder = []
 encoder = []
+utf8 = []
 
 [profile.release]
 lto = true

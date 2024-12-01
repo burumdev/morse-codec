@@ -54,13 +54,13 @@ fn decoding_live(precision: Precision, initial_short: u16) {
                     decoder.signal_event_end(false);
 
                     let message_length = decoder.message.len();
-                    let message = decoder.message.as_bytes();
+                    let message = decoder.message.as_charray();
 
                     if message_length > 0 {
                         println!();
                         print!("Message: ");
-                        for i in 0..message_length {
-                            print!("{}", message[i] as char);
+                        for &ch in message.iter().take(message_length) {
+                            print!("{}", ch as char);
                         }
                         println!();
                         println!("Current speed in Words Per Minute is {}", decoder.get_wpm());

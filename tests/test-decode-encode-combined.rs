@@ -2,11 +2,14 @@ use morse_codec::{
     decoder::Decoder,
     encoder::{
         Encoder,
-        MorseEncoder,
-        SDM,
         MorseCharray,
+        MorseEncoder,
+        SDM
     }
 };
+
+#[cfg(feature = "utf8")]
+use morse_codec::message::Utf8Charray;
 
 use keyboard_query::{
     DeviceQuery,
@@ -27,26 +30,14 @@ fn print_morse_charray(mchar: MorseCharray) {
     print!(" ");
 }
 
-fn reencode_message(message: &str, morse_encoder: &mut MorseEncoder<MSG_MAX>) {
-    println!("*****************************");
-    println!("ENCODER REENCODES THE MESSAGE");
-    println!("*****************************");
-
-    morse_encoder.message.set_message(message, false).unwrap();
-    morse_encoder.encode_message_all();
-    let encoded_charrays = morse_encoder.get_encoded_message_as_morse_charrays();
-
-    println!("Reencoded message as morse string: ");
-    encoded_charrays.for_each(|charray| print_morse_charray(charray.unwrap()));
-    println!();
-
+fn play_message(morse_encoder: &mut MorseEncoder<MSG_MAX>) {
     println!("Now 'playing' reencoded message. You'll like it.");
     let sdms = morse_encoder.get_encoded_message_as_sdm_arrays();
 
     const SHORT_DURATION: u16 = 150;
     sdms.enumerate().for_each(|(index, sdm_array)| {
         println!("SDM array: {:?}", sdm_array);
-        println!("CHARACTER IS: {}", message.as_bytes()[index] as char);
+        println!("CHARACTER IS: {}", morse_encoder.message.as_charray()[index] as char);
         sdm_array.unwrap().iter()
             .filter(|&&sdm| sdm != SDM::Empty)
             .for_each(|sdm| {
@@ -69,6 +60,39 @@ fn reencode_message(message: &str, morse_encoder: &mut MorseEncoder<MSG_MAX>) {
                 sleep(Duration::from_millis(duration as u64));
             });
     });
+}
+
+#[cfg(not(feature = "utf8"))]
+fn reencode_message(message: &str, morse_encoder: &mut MorseEncoder<MSG_MAX>) {
+    println!("*****************************");
+    println!("ENCODER REENCODES THE MESSAGE");
+    println!("*****************************");
+
+    morse_encoder.message.set_message(message, false).unwrap();
+    morse_encoder.encode_message_all();
+    let encoded_charrays = morse_encoder.get_encoded_message_as_morse_charrays();
+
+    println!("Reencoded message as morse string: ");
+    encoded_charrays.for_each(|charray| print_morse_charray(charray.unwrap()));
+    println!();
+}
+
+#[cfg(feature = "utf8")]
+fn reencode_message(message: Utf8Charray, morse_encoder: &mut MorseEncoder<MSG_MAX>) {
+    println!("*****************************");
+    println!("ENCODER REENCODES THE MESSAGE");
+    println!("*****************************");
+
+    morse_encoder.message.clear();
+
+    for ch in message.iter() {
+        morse_encoder.encode_character(ch).unwrap();
+    }
+    let encoded_charrays = morse_encoder.get_encoded_message_as_morse_charrays();
+
+    println!("Reencoded message as morse string: ");
+    encoded_charrays.for_each(|charray| print_morse_charray(charray.unwrap()));
+    println!();
 }
 
 #[test]
@@ -112,6 +136,7 @@ fn decode_encode_sdm() {
                     println!();
 
                     reencode_message(message, &mut morse_encoder);
+                    play_message(&mut morse_encoder);
                 } else if keys[0] == 16 { // Character 'q' for quitting
                     break;
                 }

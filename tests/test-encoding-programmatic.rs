@@ -3,10 +3,13 @@ use std::{
     time::Duration,
 };
 
-use morse_codec::encoder::{
-    Encoder,
-    MorseCharray,
-    SDM,
+use morse_codec::{
+    encoder::{
+        Encoder,
+        MorseCharray,
+        SDM,
+    },
+    Character,
 };
 
 const QUICK_FOX: &str = "The quick brown fox jumps over the lazy dog?";
@@ -26,19 +29,19 @@ fn encoding_sos_one_by_one() {
 
     let mut encoder = Encoder::<MESSAGE_MAX_LENGTH>::new().build();
 
-    encoder.encode_character(&b'S').unwrap();
+    encoder.encode_character(&(b'S' as Character)).unwrap();
     print_morse_charray(encoder.get_last_char_as_morse_charray().unwrap());
-    encoder.encode_character(&b'O').unwrap();
+    encoder.encode_character(&(b'O' as Character)).unwrap();
     print_morse_charray(encoder.get_last_char_as_morse_charray().unwrap());
-    encoder.encode_character(&b'S').unwrap();
+    encoder.encode_character(&(b'S' as Character)).unwrap();
     print_morse_charray(encoder.get_last_char_as_morse_charray().unwrap());
-    encoder.encode_character(&b' ').unwrap();
+    encoder.encode_character(&(b' ' as Character)).unwrap();
     print_morse_charray(encoder.get_last_char_as_morse_charray().unwrap());
-    encoder.encode_character(&b'S').unwrap();
+    encoder.encode_character(&(b'S' as Character)).unwrap();
     print_morse_charray(encoder.get_last_char_as_morse_charray().unwrap());
-    encoder.encode_character(&b'O').unwrap();
+    encoder.encode_character(&(b'O' as Character)).unwrap();
     print_morse_charray(encoder.get_last_char_as_morse_charray().unwrap());
-    encoder.encode_character(&b'S').unwrap();
+    encoder.encode_character(&(b'S' as Character)).unwrap();
     print_morse_charray(encoder.get_last_char_as_morse_charray().unwrap());
 
     println!();
@@ -56,7 +59,7 @@ fn encoding_fox_one_by_one() {
     let mut encoder = Encoder::<MESSAGE_MAX_LENGTH>::new().build();
 
     QUICK_FOX.bytes().for_each(|ch| {
-        encoder.encode_character(&ch).unwrap();
+        encoder.encode_character(&(ch as Character)).unwrap();
         print_morse_charray(encoder.get_last_char_as_morse_charray().unwrap());
     });
 
@@ -168,7 +171,7 @@ fn encoding_fox_sdm() {
         println!("{:?}", sdm);
     });
 
-    encoder.encode_character(&b'?').unwrap();
+    encoder.encode_character(&(b'?' as Character)).unwrap();
 
     let last_charray = encoder.get_last_char_as_morse_charray().unwrap();
     let last_sdm = encoder.get_last_char_as_sdm().unwrap();
@@ -240,10 +243,10 @@ fn message_position_clamping() {
 
     let mut encoder = Encoder::<MSG_MAX>::new().with_message_pos_clamping().build();
 
-    encoder.encode_character(&b'R').unwrap();
-    encoder.encode_character(&b'U').unwrap();
-    encoder.encode_character(&b'S').unwrap();
-    encoder.encode_character(&b'T').unwrap();
+    encoder.encode_character(&(b'R' as Character)).unwrap();
+    encoder.encode_character(&(b'U' as Character)).unwrap();
+    encoder.encode_character(&(b'S' as Character)).unwrap();
+    encoder.encode_character(&(b'T' as Character)).unwrap();
 
     let message = encoder.message.as_str();
 
@@ -257,7 +260,7 @@ fn message_position_clamping() {
 
     println!();
 
-    encoder.encode_character(&b'.').unwrap();
+    encoder.encode_character(&(b'.' as Character)).unwrap();
     let message = encoder.message.as_str();
     println!("Message in the encoder after adding a dot: {}", message);
 
@@ -268,10 +271,10 @@ fn message_position_clamping() {
     encoder.message.clear();
     encoder.message.set_edit_position_clamp(false);
 
-    encoder.encode_character(&b'R').unwrap();
-    encoder.encode_character(&b'U').unwrap();
-    encoder.encode_character(&b'S').unwrap();
-    encoder.encode_character(&b'T').unwrap();
+    encoder.encode_character(&(b'R' as Character)).unwrap();
+    encoder.encode_character(&(b'U' as Character)).unwrap();
+    encoder.encode_character(&(b'S' as Character)).unwrap();
+    encoder.encode_character(&(b'T' as Character)).unwrap();
 
     let message = encoder.message.as_str();
 
@@ -285,7 +288,7 @@ fn message_position_clamping() {
 
     println!();
 
-    encoder.encode_character(&b'.').unwrap();
+    encoder.encode_character(&(b'.' as Character)).unwrap();
     let message = encoder.message.as_str();
     println!("Message in the wrapping encoder after adding a dot: {}", message);
 

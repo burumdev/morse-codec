@@ -46,11 +46,12 @@ use crate::{
     MORSE_DEFAULT_CHAR,
     LONG_SIGNAL_MULTIPLIER,
     WORD_SPACE_MULTIPLIER,
+    Character,
 };
 
-const DIT: u8 = b'.';
-const DAH: u8 = b'-';
-const WORD_DELIMITER: u8 = b'/';
+const DIT: Character = '.' as Character;
+const DAH: Character = '-' as Character;
+const WORD_DELIMITER: Character = '/' as Character;
 const SDM_LENGTH: usize = 12;
 
 /// Signal Duration Multiplier can be 1x (short), 3x (long) or 7x (word space).
@@ -65,7 +66,7 @@ pub enum SDM {
 
 use SDM::{Empty as SDMEmpty, High as SDMHigh, Low as SDMLow};
 
-pub type MorseCharray = [Option<u8>; MORSE_ARRAY_LENGTH];
+pub type MorseCharray = [Option<Character>; MORSE_ARRAY_LENGTH];
 
 /// Signal Duration Multipliers are arrays of u8 values
 /// which can be used to multiply by a short signal duration constant
@@ -172,7 +173,7 @@ pub struct MorseEncoder<const MSG_MAX: usize> {
 
 // Private internal methods
 impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
-    fn get_morse_char_from_char(&self, ch: &u8) -> Option<&'static MorseCodeArray> {
+    fn get_morse_char_from_char(&self, ch: &Character) -> Option<&'static MorseCodeArray> {
         let index = self.character_set
             .iter()
             .position(|setchar| setchar == ch);
@@ -238,7 +239,8 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
         }
     }
 
-    fn encode(&mut self, ch: &u8, index: usize) -> Result<u8, &'static str> {
+    #[cfg(not(feature = "utf8"))]
+    fn encode(&mut self, ch: &Character, index: usize) -> Result<Character, &'static str> {
         if ch.is_ascii() {
             let ch_upper = ch.to_ascii_uppercase();
             match self.get_morse_char_from_char(&ch_upper) {
@@ -253,6 +255,24 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
             Err("Encoding error: Character is not ASCII")
         }
     }
+
+    #[cfg(feature = "utf8")]
+    fn encode(&mut self, ch: &Character, index: usize) -> Result<Character, &'static str> {
+        let mut ch_upper = ch.to_uppercase();
+
+        if let Some(ch) = ch_upper.next() {
+            match self.get_morse_char_from_char(&ch) {
+                Some(mchar) => {
+                    self.encoded_message[index] = mchar;
+
+                    Ok(ch)
+                },
+                None => Err("Encoding error: Could not find character in character set.")
+            }
+        } else {
+            Err("Encoding error: Could not convert character to uppercase.")
+        }
+    }
 }
 
 // Public API
@@ -261,7 +281,7 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
 
     /// Encode a single character at the edit position
     /// and add it both to the message and encoded_message.
-    pub fn encode_character(&mut self, ch: &u8) -> Result<(), &str> {
+    pub fn encode_character(&mut self, ch: &Character) -> Result<(), &str> {
         let pos = self.message.get_edit_pos();
 
         if pos < MSG_MAX {
@@ -291,6 +311,7 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
     ///
     /// Note if the slice exceeds maximum message length it will return an error.
     /// Non-ASCII characters will be ignored.
+    #[cfg(not(feature = "utf8"))]
     pub fn encode_slice(&mut self, str_slice: &str) -> Result<(), &str> {
         let ascii_count = str_slice.chars().filter(|ch| ch.is_ascii()).count();
 
@@ -300,6 +321,22 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
                 .for_each(|ch| {
                     let byte = ch as u8;
                     self.encode_character(&byte).unwrap();
+                });
+
+            Ok(())
+        } else {
+            Err("String slice length exceeds maximum message length.")
+        }
+    }
+
+    #[cfg(feature = "utf8")]
+    pub fn encode_slice(&mut self, str_slice: &str) -> Result<(), &str> {
+        let str_slice_uppercase = str_slice.to_uppercase();
+
+        if self.message.len() + str_slice_uppercase.len() < MSG_MAX {
+            str_slice_uppercase.chars()
+                .for_each(|ch| {
+                    self.encode_character(&ch).unwrap();
                 });
 
             Ok(())

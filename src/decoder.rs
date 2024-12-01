@@ -59,9 +59,10 @@ use crate::{
     DEFAULT_CHARACTER_SET,
     MORSE_ARRAY_LENGTH,
     MORSE_DEFAULT_CHAR,
-    DECODING_ERROR_BYTE,
+    DECODING_ERROR_CHAR,
     LONG_SIGNAL_MULTIPLIER,
     WORD_SPACE_MULTIPLIER,
+    Character,
 };
 
 /// Decoding precision is either Lazy, Accurate or Farnsworth(speed_reduction_factor: f32).
@@ -297,7 +298,7 @@ pub struct MorseDecoder<const MSG_MAX: usize> {
 
 // Private stuff.. Don' look at it
 impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
-    fn get_char_from_morse_char(&self, morse_char: &MorseCodeArray) -> u8 {
+    fn get_char_from_morse_char(&self, morse_char: &MorseCodeArray) -> Character {
         let index = MORSE_CODE_SET
             .iter()
             .position(|mchar| mchar == morse_char);
@@ -305,7 +306,7 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
         if let Some(i) = index {
             self.character_set[i]
         } else {
-            DECODING_ERROR_BYTE
+            DECODING_ERROR_CHAR
         }
     }
 
@@ -623,7 +624,7 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
             _ => {
                 //DBG
                 //println!("We reached the end of buffer and couldn't decode the character. signal_buffer so far is: {:?}", self.signal_buffer);
-                self.message.add_char(DECODING_ERROR_BYTE);
+                self.message.add_char(DECODING_ERROR_CHAR);
                 self.message.shift_edit_right();
                 self.reset_character();
             }
