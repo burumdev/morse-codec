@@ -3,7 +3,7 @@
 //!
 //! You can create messages by sending individual high and low signals in milliseconds to decoder,
 //! from the keyboard, mouse clicks, or a button connected to some embedded device.
-//! Decoder supports three precision (difficulty) modes. Lazy (easiest), Accurate(Hardest) and
+//! Decoder supports three precision (difficulty) modes. Lazy (easiest), Accurate (hardest) and
 //! Farnsworth mode (somewhere inbetween)
 //!
 //! Use the encoder to turn your messages or characters into morse code strings or create a
@@ -13,8 +13,8 @@
 //! * Decoder
 //! * Encoder
 //!
-//! UTF-8 is not supported at the moment, but can be implemented behind
-//! a feature flag in the future.
+//! UTF-8 is supported behind a feature flag.
+//! When not used it should not interfere with embedded device applications.
 //!
 //! The lib is no_std outside testing to make sure it will work on embedded devices
 //! as well as operating systems.
@@ -23,7 +23,7 @@
 // the code marked by a "// DBG" sign on top. In order to use them on a development environment
 // with a proper OS and std, comment out the below attribute and uncomment the debug lines you want.
 
-//#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(test), no_std)]
 
 #[cfg(not(feature = "utf8"))]
 pub type Character = u8;
@@ -48,8 +48,8 @@ const WORD_SPACE_MULTIPLIER: u16 = 7;
 pub const FILLER: Character = '#' as Character;
 
 /// Char version of the [FILLER] coz why not? It's mainly used while generating bytes from
-/// &str slices. A [char] which is utf-8 by default in Rust, can be more than one byte, turning
-/// chars into bytes if they're ascii makes the code stable.
+/// &str slices. A [char] which is utf-8 by default in Rust, can be more than one byte.
+/// In ASCII mode turning chars into bytes if they're only ascii makes sense.
 pub const FILLER_CHAR: char = '#';
 
 /// If a decoding error happens, we put this character as a placeholder.

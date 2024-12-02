@@ -40,8 +40,8 @@ fn direct_signal_entry_sos() {
     println!("Message length: {:?}", message_length);
 
     let message = decoder.message.as_charray();
-    for i in 0..message_length {
-        println!("Message letter: {}", message[i] as char);
+    for &ch in message.iter().take(message_length) {
+        println!("Message letter: {}", ch as char);
     }
 
     #[cfg(not(feature = "utf8"))]
@@ -106,8 +106,8 @@ fn decoding_double_sos() {
     println!("Message length: {:?}", message_length);
 
     let message = decoder.message.as_charray();
-    for i in 0..message_length {
-        println!("Message letter: {}", message[i] as char);
+    for &ch in message.iter().take(message_length) {
+        println!("Message letter: {}", ch as char);
     }
 
     #[cfg(not(feature = "utf8"))]
@@ -229,8 +229,8 @@ fn decoding_bug_prone() {
     println!("Message length: {:?}", message_length);
 
     let message = decoder.message.as_charray();
-    for i in 0..message_length {
-        println!("Message letter: {}", message[i] as char);
+    for &ch in message.iter().take(message_length) {
+        println!("Message letter: {}", ch as char);
     }
 
     #[cfg(not(feature = "utf8"))]
@@ -272,8 +272,8 @@ fn decoding_single_e() {
     println!("Message length: {:?}", message_length);
 
     let message = decoder.message.as_charray();
-    for i in 0..message_length {
-        println!("Message letter: {}", message[i] as char);
+    for &ch in message.iter().take(message_length) {
+        println!("Message letter: {}", ch as char);
     }
 
     assert_eq!(message[0] as char, 'E');
@@ -298,8 +298,8 @@ fn decoding_single_t() {
     println!("Message length: {:?}", message_length);
 
     let message = decoder.message.as_charray();
-    for i in 0..message_length {
-        println!("Message letter: {}", message[i] as char);
+    for &ch in message.iter().take(message_length) {
+        println!("Message letter: {}", ch as char);
     }
 
     assert_eq!(message[0] as char, 'T');
@@ -323,8 +323,8 @@ fn decoding_single_t_default_short_ms() {
     println!("Message length: {:?}", message_length);
 
     let message = decoder.message.as_charray();
-    for i in 0..message_length {
-        println!("Message letter: {}", message[i] as char);
+    for &ch in message.iter().take(message_length) {
+        println!("Message letter: {}", ch as char);
     }
 
     assert_eq!(message[0] as char, 'T');
@@ -386,8 +386,8 @@ fn decoding_sos_with_custom_character_set() {
     println!("Message length: {:?}", message_length);
 
     let message = decoder.message.as_charray();
-    for i in 0..message_length {
-        println!("Message letter: {}", message[i] as char);
+    for &ch in message.iter().take(message_length) {
+        println!("Message letter: {}", ch as char);
     }
 
     #[cfg(not(feature = "utf8"))]
@@ -451,8 +451,8 @@ fn decoding_with_starter_message() {
     println!("Message length: {:?}", message_length);
 
     let message = decoder.message.as_charray();
-    for i in 0..message_length {
-        println!("Message letter: {}", message[i] as char);
+    for &ch in message.iter().take(message_length) {
+        println!("Message letter: {}", ch as char);
     }
 
     assert_eq!(message.into_iter().take(message_length).rev().collect::<Vec<Character>>()[..3], [b'S' as Character, 'O' as Character, 'S' as Character]);
@@ -486,8 +486,8 @@ fn decoding_with_starter_message() {
     println!("Message length: {:?}", message_length);
 
     let message = decoder.message.as_charray();
-    for i in 0..message_length {
-        println!("Message letter: {}", message[i] as char);
+    for &ch in message.iter().take(message_length) {
+        println!("Message letter: {}", ch as char);
     }
 
     #[cfg(not(feature = "utf8"))]

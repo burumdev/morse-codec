@@ -1,11 +1,11 @@
-//! Live decoder for morse code that converts morse code to ASCII characters. Supports real-time decoding of incoming signals and decoding
+//! Live decoder for morse code that converts morse code to characters. Supports real-time decoding of incoming signals and decoding
 //! prepared morse signals. This module supports Farnsworth timing mode and can be used for morse
 //! code practice.
 //!
 //! Receives morse signals and decodes them character by character
 //! to create a char array (charray) message with constant max length.
-//! Empty characters will be filled with the const FILLER_BYTE and
-//! decoding errors will be filled with DECODING_ERROR_BYTE.
+//! Empty characters will be filled with the const FILLER and
+//! decoding errors will be filled with DECODING_ERROR_CHAR.
 //! Trade-offs to support no_std include:
 //! * No vectors or any other type of dynamic heap memory used, all data is plain old stack arrays.
 //! * We decode the signals character by character instead of creating a large buffer for all
@@ -110,7 +110,7 @@ const SIGNAL_BUFFER_LENGTH: usize = MORSE_ARRAY_LENGTH + 1;
 type SignalBuffer = [SignalDuration; SIGNAL_BUFFER_LENGTH];
 
 /// This is the builder, or public interface of the decoder using builder pattern.
-/// It builds a MorseDecoder which is the concrete implementation and returns it with build().
+/// It builds a MorseDecoder which is the concrete implementation and returns it with `build()`.
 /// For details on how to use the decoder, refer to [MorseDecoder] documentation.
 pub struct Decoder<const MSG_MAX: usize> {
     // User defined
@@ -149,7 +149,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
 
     /// Build decoder with a starting message.
     ///
-    /// edit_pos_end means we'll continue decoding from the end of this string.
+    /// `edit_pos_end` means we'll continue decoding from the end of this string.
     /// If you pass false to it, we'll start from the beginning.
     pub fn with_message(mut self, message_str: &str, edit_pos_end: bool) -> Self {
         self.message = Message::new(message_str, edit_pos_end, self.message.is_edit_clamped());
@@ -200,7 +200,8 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
     /// Use a different character set than default english alphabet.
     ///
     /// This can be helpful to create a message with trivial encryption.
-    /// Letters can be shuffled for example. This kind of encryption can
+    /// Letters can be shuffled for example. With utf-8 feature flag, a somewhat
+    /// stronger encryption can be used. These kind of encryptions can
     /// easily be broken with powerful algorithms and AI.
     /// **DON'T** use it for secure communication.
     pub fn with_character_set(mut self, character_set: CharacterSet) -> Self {

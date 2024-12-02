@@ -123,7 +123,8 @@ impl<const MSG_MAX: usize> Encoder<MSG_MAX> {
     /// Use a different character set than default english alphabet.
     ///
     /// This can be helpful to create a message with trivial encryption.
-    /// Letters can be shuffled for example. This kind of encryption can
+    /// Letters can be shuffled for example. With utf-8 feature flag, a somewhat
+    /// stronger encryption can be used. These kind of encryptions can
     /// easily be broken with powerful algorithms and AI.
     /// **DON'T** use it for secure communication.
     pub fn with_character_set(mut self, character_set: CharacterSet) -> Self {
@@ -331,10 +332,8 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
 
     #[cfg(feature = "utf8")]
     pub fn encode_slice(&mut self, str_slice: &str) -> Result<(), &str> {
-        let str_slice_uppercase = str_slice.to_uppercase();
-
-        if self.message.len() + str_slice_uppercase.len() < MSG_MAX {
-            str_slice_uppercase.chars()
+        if self.message.len() + str_slice.len() < MSG_MAX {
+            str_slice.chars()
                 .for_each(|ch| {
                     self.encode_character(&ch).unwrap();
                 });
