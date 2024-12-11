@@ -144,6 +144,9 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
         core::array::from_fn(|_|
             str_iter.next()
                 .unwrap_or(FILLER_CHAR)
+                .to_uppercase()
+                .next()
+                .unwrap()
         )
     }
 }

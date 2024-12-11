@@ -10,7 +10,7 @@ keywords = ["morse", "encoder", "decoder", "no_std", "embedded"]
 categories = ["embedded", "no-std::no-alloc", "encoding", "text-processing", "accessibility"]
 
 [features]
-default = ["decoder", "encoder", "utf8"]
+default = ["decoder", "encoder"]
 decoder = []
 encoder = []
 utf8 = []

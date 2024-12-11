@@ -280,37 +280,11 @@ fn decoding_single_e() {
 }
 
 // Create a message with a single "T"
-// This one is a showstopper
-// How can we be sure if a long signal followed by a long signal space is T or E,
-// if we didn't sample any signals before it?
-// FIXME: Challenge accepted? Fix it.
-#[test]
-fn decoding_single_t() {
-    const MESSAGE_MAX_LENGTH: usize = 1;
-
-    let mut decoder = Decoder::<MESSAGE_MAX_LENGTH>::new()
-        .with_precision(Precision::Accurate).build();
-
-    decoder.signal_event(300, true);
-    decoder.signal_event(300, false);
-
-    let message_length = decoder.message.len();
-    println!("Message length: {:?}", message_length);
-
-    let message = decoder.message.as_charray();
-    for &ch in message.iter().take(message_length) {
-        println!("Message letter: {}", ch as char);
-    }
-
-    assert_eq!(message[0] as char, 'T');
-}
-
-// Create a message with a single "T"
-// This time we use a reference short signal duration
+// We use a reference short signal duration
 // passed to the builder.
 // So this should work as expected.
 #[test]
-fn decoding_single_t_default_short_ms() {
+fn decoding_single_t() {
     const MESSAGE_MAX_LENGTH: usize = 1;
 
     let mut decoder = Decoder::<MESSAGE_MAX_LENGTH>::new()
@@ -455,7 +429,7 @@ fn decoding_with_starter_message() {
         println!("Message letter: {}", ch as char);
     }
 
-    assert_eq!(message.into_iter().take(message_length).rev().collect::<Vec<Character>>()[..3], [b'S' as Character, 'O' as Character, 'S' as Character]);
+    assert_eq!(message.into_iter().take(message_length).rev().collect::<Vec<Character>>()[..3], [b'S' as Character, b'O' as Character, b'S' as Character]);
 
     println!("We set the message again to some text, but start from the beginning this time.");
 
@@ -521,7 +495,8 @@ fn set_get_message_str() {
 
     println!();
 
-    println!("Rewriting message with an illegal utf-8 message");
+    println!("Rewriting message with an 'illegal' utf-8 message");
+    println!("In utf8 mode, this should print as expected. In ASCII mode utf8 characters should be absent.");
 
     decoder.message.set_message("Some message with utf-8: french Élysée (like Elysee) pallace and spanish señor (like senor)", true).unwrap();
 
