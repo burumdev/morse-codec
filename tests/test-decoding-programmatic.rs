@@ -309,7 +309,7 @@ fn decoding_sos_with_custom_character_set() {
     const MESSAGE_MAX_LENGTH: usize = 3;
 
     #[cfg(not(feature = "utf8"))]
-    let character_set: CharacterSet = [
+    let character_set: CharacterSet = &[
         b' ',
         b'I', b'U', b'C', b'E', b'D', b'F', b'Z', b'P', b'A', b'J', b'K', b'X', b'T', b'N', b'V', b'H', b'Q', b'S', b'R',
         b'M', b'B', b'O', b'W', b'L', b'Y', b'G',
@@ -318,7 +318,7 @@ fn decoding_sos_with_custom_character_set() {
     ];
 
     #[cfg(feature = "utf8")]
-    let character_set: CharacterSet = [
+    let character_set: CharacterSet = &[
         ' ',
         'I', 'U', 'C', 'E', 'D', 'F', 'Z', 'P', 'A', 'J', 'K', 'X', 'T', 'N', 'V', 'H', 'Q', 'S', 'R',
         'M', 'B', 'O', 'W', 'L', 'Y', 'G',

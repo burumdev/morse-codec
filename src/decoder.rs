@@ -52,17 +52,18 @@ use core::ops::RangeInclusive;
 
 use crate::{
     message::Message,
+    Character,
     CharacterSet,
     MorseCodeArray,
+    MorseCodeSet,
     MorseSignal::{self, Long as L, Short as S},
-    MORSE_CODE_SET,
+    DECODING_ERROR_CHAR,
     DEFAULT_CHARACTER_SET,
+    DEFAULT_MORSE_CODE_SET,
+    LONG_SIGNAL_MULTIPLIER,
     MORSE_ARRAY_LENGTH,
     MORSE_DEFAULT_CHAR,
-    DECODING_ERROR_CHAR,
-    LONG_SIGNAL_MULTIPLIER,
     WORD_SPACE_MULTIPLIER,
-    Character,
 };
 
 /// Decoding precision is either Lazy, Accurate or Farnsworth(speed_reduction_factor: f32).
@@ -116,6 +117,7 @@ pub struct Decoder<const MSG_MAX: usize> {
     // User defined
     precision: Precision,
     character_set: CharacterSet,
+    morse_code_set: MorseCodeSet,
     signal_tolerance: f32,
     reference_short_ms: MilliSeconds,
     message: Message<MSG_MAX>,
@@ -137,6 +139,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
             // User defined
             precision: Lazy,
             character_set: DEFAULT_CHARACTER_SET,
+            morse_code_set: DEFAULT_MORSE_CODE_SET,
             signal_tolerance: 0.50,
             reference_short_ms: 0,
             message: Message::default(),
@@ -210,6 +213,16 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
         self
     }
 
+    /// Use a different morse code set than the default.
+    ///
+    /// It's mainly useful for a custom morse code set with utf8
+    /// character sets. Different alphabets have different corresponding morse code sets.
+    pub fn with_morse_code_set(mut self, morse_code_set: MorseCodeSet) -> Self {
+        self.morse_code_set = morse_code_set;
+
+        self
+    }
+
     /// Use a different signal tolerance range factor than the default 0.5.
     ///
     /// Tolerance factors higher than 0.5 tend to overlap and result in wrong decoding.
@@ -259,6 +272,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
         let Decoder {
             precision,
             character_set,
+            morse_code_set,
             signal_tolerance,
             reference_short_ms,
             message,
@@ -270,6 +284,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
         MorseDecoder::<MSG_MAX> {
             precision,
             character_set,
+            morse_code_set,
             signal_tolerance,
             reference_short_ms,
             message,
@@ -288,6 +303,7 @@ pub struct MorseDecoder<const MSG_MAX: usize> {
     // User defined
     precision: Precision,
     character_set: CharacterSet,
+    morse_code_set: MorseCodeSet,
     signal_tolerance: f32,
     reference_short_ms: MilliSeconds,
     pub message: Message<MSG_MAX>,
@@ -300,7 +316,7 @@ pub struct MorseDecoder<const MSG_MAX: usize> {
 // Private stuff.. Don' look at it
 impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
     fn get_char_from_morse_char(&self, morse_char: &MorseCodeArray) -> Character {
-        let index = MORSE_CODE_SET
+        let index = self.morse_code_set
             .iter()
             .position(|mchar| mchar == morse_char);
 

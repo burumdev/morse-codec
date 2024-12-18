@@ -31,8 +31,8 @@ pub type Character = u8;
 #[cfg(feature = "utf8")]
 pub type Character = char;
 
-// This is the array length for a sequence of morse signals or character representation of those
-// signals while encoding
+// This is the array length for a sequence of morse signals or
+// character representation of those signals while encoding
 const MORSE_ARRAY_LENGTH: usize = 6;
 const LONG_SIGNAL_MULTIPLIER: u16 = 3;
 const WORD_SPACE_MULTIPLIER: u16 = 7;
@@ -45,7 +45,7 @@ pub const FILLER: Character = '#' as Character;
 
 /// Char version of the [FILLER] coz why not? It's mainly used while generating bytes from
 /// &str slices. A [char] which is utf-8 by default in Rust, can be more than one byte.
-/// In ASCII mode turning chars into bytes if they're only ascii makes sense.
+/// In ASCII mode, turning chars into bytes if they're only ascii makes sense.
 pub const FILLER_CHAR: char = '#';
 
 /// If a decoding error happens, we put this character as a placeholder.
@@ -68,9 +68,10 @@ pub const MORSE_DEFAULT_CHAR: MorseCodeArray = [None, None, None, None, None, No
 pub mod charsets;
 pub use charsets::{
     CharacterSet,
-    CHARACTER_SET_LENGTH,
+    MorseCodeSet,
+    DEFAULT_CHARACTER_SET_LENGTH,
     DEFAULT_CHARACTER_SET,
-    MORSE_CODE_SET,
+    DEFAULT_MORSE_CODE_SET,
 };
 
 #[cfg(feature = "decoder")]

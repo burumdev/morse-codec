@@ -111,12 +111,12 @@ encoded_charrays.for_each(|charray| {
 
 ## Running Tests
 Instead of reference implementation in examples directory, we have integration tests.
-They serve a dual purpose of testing the library as well as being a reference client implementation.
-In addition to documentation, one can use these integration tests to understand how the library works
+They serve a dual purpose of testing the library as well as a reference client implementation.
+In addition to docs, one can use these integration tests to understand how the library works
 in practice.
 
-Use of `--nocapture` option with the test command is recommended. This will
-enable `println!()` outputs from the tests so that inputs and outputs can be observed.
+`--nocapture` option with the test command is recommended. This will
+enable `println!()` outputs from the tests and inputs and outputs can be observed.
 
 Running all tests at once is not recommended. Tests run asynchronously in Rust and this will
 result in intermingled `println!()` outputs. And I couldn't find a way to make `--test-threads 1`

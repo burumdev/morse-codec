@@ -38,9 +38,10 @@
 use crate::{
     message::Message,
     CharacterSet,
+    MorseCodeSet,
     MorseCodeArray,
     MorseSignal::{Long as L, Short as S},
-    MORSE_CODE_SET,
+    DEFAULT_MORSE_CODE_SET,
     DEFAULT_CHARACTER_SET,
     MORSE_ARRAY_LENGTH,
     MORSE_DEFAULT_CHAR,
@@ -81,8 +82,9 @@ pub struct Encoder<const MSG_MAX: usize> {
     // User defined
     message: Message<MSG_MAX>,
     character_set: CharacterSet,
+    morse_code_set: MorseCodeSet,
     // Internal stuff
-    encoded_message: [&'static MorseCodeArray; MSG_MAX],
+    encoded_message: [MorseCodeArray; MSG_MAX],
 }
 
 impl<const MSG_MAX: usize> Default for Encoder<MSG_MAX> {
@@ -96,7 +98,8 @@ impl<const MSG_MAX: usize> Encoder<MSG_MAX> {
         Self {
             message: Message::default(),
             character_set: DEFAULT_CHARACTER_SET,
-            encoded_message: [&MORSE_DEFAULT_CHAR; MSG_MAX],
+            morse_code_set: DEFAULT_MORSE_CODE_SET,
+            encoded_message: [MORSE_DEFAULT_CHAR; MSG_MAX],
         }
     }
 
@@ -133,6 +136,16 @@ impl<const MSG_MAX: usize> Encoder<MSG_MAX> {
         self
     }
 
+    /// Use a different morse code set than the default.
+    ///
+    /// It's mainly useful for a custom morse code set with utf8
+    /// character sets. Different alphabets have different corresponding morse code sets.
+    pub fn with_morse_code_set(mut self, morse_code_set: MorseCodeSet) -> Self {
+        self.morse_code_set = morse_code_set;
+
+        self
+    }
+
     /// Change the wrapping behaviour of message position to clamping.
     ///
     /// This will prevent the position cycling back to 0 when overflows or
@@ -155,11 +168,17 @@ impl<const MSG_MAX: usize> Encoder<MSG_MAX> {
     /// The ring is yours now...
     pub fn build(self) -> MorseEncoder<MSG_MAX> {
         let Encoder {
-            message, character_set, encoded_message,
+            message,
+            character_set,
+            morse_code_set,
+            encoded_message,
         } = self;
 
         MorseEncoder::<MSG_MAX> {
-            message, character_set, encoded_message,
+            message,
+            character_set,
+            morse_code_set,
+            encoded_message,
         }
     }
 }
@@ -168,19 +187,20 @@ pub struct MorseEncoder<const MSG_MAX: usize> {
     // User defined
     pub message: Message<MSG_MAX>,
     character_set: CharacterSet,
+    morse_code_set: MorseCodeSet,
     // Internal stuff
-    encoded_message: [&'static MorseCodeArray; MSG_MAX],
+    encoded_message: [MorseCodeArray; MSG_MAX],
 }
 
 // Private internal methods
 impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
-    fn get_morse_char_from_char(&self, ch: &Character) -> Option<&'static MorseCodeArray> {
+    fn get_morse_char_from_char(&self, ch: &Character) -> Option<MorseCodeArray> {
         let index = self.character_set
             .iter()
             .position(|setchar| setchar == ch);
 
         if let Some(i) = index {
-            Some(&MORSE_CODE_SET[i])
+            Some(self.morse_code_set[i].clone())
         } else {
             None
         }
