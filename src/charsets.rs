@@ -18,9 +18,9 @@ pub const DEFAULT_CHARACTER_SET_LENGTH: usize = 53;
 /// In order to change it and use a different mapping, client code can use [CharacterSet] type
 /// to construct an array of u8 with [CHARACTER_SET_LENGTH].
 /// ```ignore
-/// let my_set: CharacterSet = [b' ', ...FILL IN THE BYTES...];
+/// let my_set: CharacterSet = b" ADD SOME CHARACTERS TO THIS BYTE STRING"];
 /// // Or with 'utf8' feature
-/// let my_set: CharacterSet = [' ', ...FILL IN THE CHARS...];
+/// let my_set: CharacterSet = &[' ', ...FILL IN THE CHARS...];
 /// // Then
 /// let decoder = Decoder::<128>::new().with_character_set(my_set).build();
 /// ```
@@ -31,7 +31,7 @@ pub type CharacterSet = &'static [Character];
 
 /// Default international morse code characters. It includes English language letters, numbers and
 /// punctuation marks. In utf8 mode a custom version of this array can be used while building an Encoder or Decoder
-/// using 'with_character_set' functions. [CHARACTER_SET_LENGTH] as well as the corresponding [MORSE_CODE_SET]
+/// using 'with_character_set' functions. Corresponding [MORSE_CODE_SET]
 /// can also be changed to support different languages.
 #[cfg(not(feature = "utf8"))]
 pub const DEFAULT_CHARACTER_SET: CharacterSet = b" ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,?:-\"(=X.;/'_)+@";
