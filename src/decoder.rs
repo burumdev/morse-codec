@@ -1,11 +1,11 @@
-//! Live decoder for morse code that converts morse code to ASCII characters. Supports real-time decoding of incoming signals and decoding
+//! Live decoder for morse code that converts morse code to characters. Supports real-time decoding of incoming signals and decoding
 //! prepared morse signals. This module supports Farnsworth timing mode and can be used for morse
 //! code practice.
 //!
 //! Receives morse signals and decodes them character by character
 //! to create a char array (charray) message with constant max length.
-//! Empty characters will be filled with the const FILLER_BYTE and
-//! decoding errors will be filled with DECODING_ERROR_BYTE.
+//! Empty characters will be filled with the const FILLER and
+//! decoding errors will be filled with DECODING_ERROR_CHAR.
 //! Trade-offs to support no_std include:
 //! * No vectors or any other type of dynamic heap memory used, all data is plain old stack arrays.
 //! * We decode the signals character by character instead of creating a large buffer for all
@@ -52,15 +52,17 @@ use core::ops::RangeInclusive;
 
 use crate::{
     message::Message,
+    Character,
     CharacterSet,
     MorseCodeArray,
+    MorseCodeSet,
     MorseSignal::{self, Long as L, Short as S},
-    MORSE_CODE_SET,
+    DECODING_ERROR_CHAR,
     DEFAULT_CHARACTER_SET,
+    DEFAULT_MORSE_CODE_SET,
+    LONG_SIGNAL_MULTIPLIER,
     MORSE_ARRAY_LENGTH,
     MORSE_DEFAULT_CHAR,
-    DECODING_ERROR_BYTE,
-    LONG_SIGNAL_MULTIPLIER,
     WORD_SPACE_MULTIPLIER,
 };
 
@@ -109,12 +111,13 @@ const SIGNAL_BUFFER_LENGTH: usize = MORSE_ARRAY_LENGTH + 1;
 type SignalBuffer = [SignalDuration; SIGNAL_BUFFER_LENGTH];
 
 /// This is the builder, or public interface of the decoder using builder pattern.
-/// It builds a MorseDecoder which is the concrete implementation and returns it with build().
+/// It builds a MorseDecoder which is the concrete implementation and returns it with `build()`.
 /// For details on how to use the decoder, refer to [MorseDecoder] documentation.
 pub struct Decoder<const MSG_MAX: usize> {
     // User defined
     precision: Precision,
     character_set: CharacterSet,
+    morse_code_set: MorseCodeSet,
     signal_tolerance: f32,
     reference_short_ms: MilliSeconds,
     message: Message<MSG_MAX>,
@@ -136,6 +139,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
             // User defined
             precision: Lazy,
             character_set: DEFAULT_CHARACTER_SET,
+            morse_code_set: DEFAULT_MORSE_CODE_SET,
             signal_tolerance: 0.50,
             reference_short_ms: 0,
             message: Message::default(),
@@ -148,7 +152,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
 
     /// Build decoder with a starting message.
     ///
-    /// edit_pos_end means we'll continue decoding from the end of this string.
+    /// `edit_pos_end` means we'll continue decoding from the end of this string.
     /// If you pass false to it, we'll start from the beginning.
     pub fn with_message(mut self, message_str: &str, edit_pos_end: bool) -> Self {
         self.message = Message::new(message_str, edit_pos_end, self.message.is_edit_clamped());
@@ -199,11 +203,22 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
     /// Use a different character set than default english alphabet.
     ///
     /// This can be helpful to create a message with trivial encryption.
-    /// Letters can be shuffled for example. This kind of encryption can
+    /// Letters can be shuffled for example. With utf-8 feature flag, a somewhat
+    /// stronger encryption can be used. These kind of encryptions can
     /// easily be broken with powerful algorithms and AI.
     /// **DON'T** use it for secure communication.
     pub fn with_character_set(mut self, character_set: CharacterSet) -> Self {
         self.character_set = character_set;
+
+        self
+    }
+
+    /// Use a different morse code set than the default.
+    ///
+    /// It's mainly useful for a custom morse code set with utf8
+    /// character sets. Different alphabets have different corresponding morse code sets.
+    pub fn with_morse_code_set(mut self, morse_code_set: MorseCodeSet) -> Self {
+        self.morse_code_set = morse_code_set;
 
         self
     }
@@ -257,6 +272,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
         let Decoder {
             precision,
             character_set,
+            morse_code_set,
             signal_tolerance,
             reference_short_ms,
             message,
@@ -268,6 +284,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
         MorseDecoder::<MSG_MAX> {
             precision,
             character_set,
+            morse_code_set,
             signal_tolerance,
             reference_short_ms,
             message,
@@ -286,6 +303,7 @@ pub struct MorseDecoder<const MSG_MAX: usize> {
     // User defined
     precision: Precision,
     character_set: CharacterSet,
+    morse_code_set: MorseCodeSet,
     signal_tolerance: f32,
     reference_short_ms: MilliSeconds,
     pub message: Message<MSG_MAX>,
@@ -297,15 +315,15 @@ pub struct MorseDecoder<const MSG_MAX: usize> {
 
 // Private stuff.. Don' look at it
 impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
-    fn get_char_from_morse_char(&self, morse_char: &MorseCodeArray) -> u8 {
-        let index = MORSE_CODE_SET
+    fn get_char_from_morse_char(&self, morse_char: &MorseCodeArray) -> Character {
+        let index = self.morse_code_set
             .iter()
             .position(|mchar| mchar == morse_char);
 
         if let Some(i) = index {
             self.character_set[i]
         } else {
-            DECODING_ERROR_BYTE
+            DECODING_ERROR_CHAR
         }
     }
 
@@ -623,7 +641,7 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
             _ => {
                 //DBG
                 //println!("We reached the end of buffer and couldn't decode the character. signal_buffer so far is: {:?}", self.signal_buffer);
-                self.message.add_char(DECODING_ERROR_BYTE);
+                self.message.add_char(DECODING_ERROR_CHAR);
                 self.message.shift_edit_right();
                 self.reset_character();
             }

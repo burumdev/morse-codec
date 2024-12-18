@@ -25,10 +25,65 @@
 //! let editing_position = decoder.message.get_edit_pos();
 //! ```
 
-use crate::{FILLER_BYTE, FILLER_CHAR};
+use crate::{
+    FILLER,
+    FILLER_CHAR,
+    Character,
+};
 
+#[cfg(feature = "utf8")]
+use core::fmt::Display;
+
+#[cfg(feature = "utf8")]
+#[derive(Debug)]
+/// When "utf8" feature is enabled, instead of &str
+/// we return this new type struct as a placeholder for &str,
+/// because it's still hard to use arithmetic operations in
+/// const expressions. In the future if this PR gets merged:
+/// <https://github.com/rust-lang/rust/issues/76560>
+/// We might update the code to do stuff like:
+/// let chars: [0; MSG_MAX * 4] = ...
+pub struct Utf8Charray<'a>(&'a [char]);
+
+#[cfg(feature = "utf8")]
+impl Display for Utf8Charray<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        for ch in self.0 {
+            write!(f, "{}", ch)?;
+        }
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "utf8")]
+impl PartialEq<&str> for Utf8Charray<'_> {
+    fn eq(&self, other: &&str) -> bool {
+        let mut other_chars = other.chars();
+        for &ch in self.0.iter() {
+            let other_char = other_chars.next();
+            if other_char.is_none() || ch != other_char.unwrap() {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+#[cfg(feature = "utf8")]
+impl Utf8Charray<'_> {
+    pub fn iter(&self) -> impl Iterator<Item = &char> {
+        self.0.iter()
+    }
+}
+
+/// This struct holds the message in human readable format.
+///
+/// It also provides functions to do edit position manipulation,
+/// getting or setting characters at index positions.
 pub struct Message<const MSG_MAX: usize> {
-    chars: [u8; MSG_MAX],
+    chars: [Character; MSG_MAX],
     edit_pos: usize,
     clamp_edit_pos: bool,
 }
@@ -36,7 +91,7 @@ pub struct Message<const MSG_MAX: usize> {
 impl<const MSG_MAX: usize> Default for Message<MSG_MAX> {
     fn default() -> Self {
         Self {
-            chars: [FILLER_BYTE; MSG_MAX],
+            chars: [FILLER; MSG_MAX],
             edit_pos: 0,
             clamp_edit_pos: false,
         }
@@ -66,6 +121,7 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
         new_self
     }
 
+    #[cfg(not(feature = "utf8"))]
     // Static member utility function to convert an &str to byte array internal format.
     fn str_to_bytes(str: &str) -> [u8; MSG_MAX] {
         let mut str_iter = str.chars()
@@ -78,22 +134,37 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
                 .to_ascii_uppercase() as u8
         )
     }
+
+    #[cfg(feature = "utf8")]
+    // Static member utility function to convert an &str to charray internal format.
+    fn str_to_bytes(str: &str) -> [Character; MSG_MAX] {
+        let mut str_iter = str.chars()
+            .take(MSG_MAX);
+
+        core::array::from_fn(|_|
+            str_iter.next()
+                .unwrap_or(FILLER_CHAR)
+                .to_uppercase()
+                .next()
+                .unwrap()
+        )
+    }
 }
 
 // Private stuff
 impl<const MSG_MAX: usize> Message<MSG_MAX> {
-    // Index of last character before the last FILLER_BYTEs
+    // Index of last character before the last FILLERs
     fn last_char_index(&self) -> Option<usize> {
-        self.chars.iter().rposition(|ch| *ch != FILLER_BYTE)
+        self.chars.iter().rposition(|ch| *ch != FILLER)
     }
 
-    // Check if any FILLER_BYTE characters are between normal chars
+    // Check if any FILLER characters are between normal chars
     // and convert them to ' ' space characters.
     fn update_empty_chars(&mut self) {
         if let Some(last_index) = self.last_char_index() {
             self.chars.iter_mut().enumerate().for_each(|(index, ch)| {
-                if *ch == FILLER_BYTE && index < last_index {
-                    *ch = b' ';
+                if *ch == FILLER && index < last_index {
+                    *ch = ' ' as Character;
                 }
             });
         }
@@ -154,10 +225,10 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
 
     /// Insert character at the editing position.
     ///
-    /// If any characters before the character are [FILLER_BYTE]s
+    /// If any characters before the character are [FILLER]s
     /// They'll automatically be converted to empty characters ' '
     /// which means the user wants some space between words.
-    pub fn add_char(&mut self, ch: u8) {
+    pub fn add_char(&mut self, ch: Character) {
         self.chars[self.edit_pos] = ch;
         // This is only necessary if client code sets edit position
         // manually and adds a character after it, but hey.
@@ -166,20 +237,20 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
 
     /// Insert character at index.
     ///
-    /// If any characters before the character are [FILLER_BYTE]s
+    /// If any characters before the character are [FILLER]s
     /// They'll automatically be converted to empty characters ' '
     /// which means the user wants some space between words.
-    pub fn put_char_at(&mut self, index: usize, ch: u8) {
+    pub fn put_char_at(&mut self, index: usize, ch: Character) {
         self.chars[index] = ch;
         self.update_empty_chars();
     }
 
     /// Returns character at an index as a byte
-    pub fn char_at(&self, index: usize) -> u8 {
+    pub fn char_at(&self, index: usize) -> Character {
         self.chars[index]
     }
 
-    /// Returns current length of the message discarding empty FILLER_BYTE characters at the end.
+    /// Returns current length of the message discarding empty FILLER characters at the end.
     ///
     /// This is useful for creating ranged loops of actual characters decoded or can be encoded.
     pub fn len(&self) -> usize {
@@ -193,7 +264,7 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
 
     /// Returns true if the message is empty, false otherwise.
     ///
-    /// This method discards FILLER_BYTE characters and only takes into
+    /// This method discards FILLER characters and only takes into
     /// account normal characters.
     pub fn is_empty(&self) -> bool {
         self.last_char_index().is_none()
@@ -219,37 +290,57 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
         }
     }
 
-    /// Returns the message as it is now in a byte array format.
+    /// Returns the message as it is now in a character array format.
     ///
-    /// Note that this also includes 'empty' [FILLER_BYTE] characters.
+    /// Note that this also includes 'empty' [FILLER] characters.
     /// Client code can use return value of len() which is the actual length
     /// to loop through it or filter the fillers manually in a loop or iterator.
-    pub fn as_bytes(&self) -> [u8; MSG_MAX] {
+    pub fn as_charray(&self) -> [Character; MSG_MAX] {
         self.chars
     }
 
     /// Returns the message as it is now as &str slice.
+    /// Or as a [Utf8Charray] if "utf8" feature is enabled.
     ///
-    /// Note that this *does not* include empty [FILLER_BYTE] characters.
+    /// Note that this *does not* include empty [FILLER] characters.
+    #[cfg(not(feature = "utf8"))]
     pub fn as_str(&self) -> &str {
         core::str::from_utf8(self.chars[0..self.len()].as_ref()).unwrap()
     }
 
+    #[cfg(feature = "utf8")]
+    pub fn as_str(&self) -> Utf8Charray {
+        // Fixme: Update the code to use buffer copy,
+        // after const generic expressions become stable in Rust.
+        // https://github.com/rust-lang/rust/issues/76560
+        //
+        // let mut buffer = [0u8; MSG_MAX * 4];
+        // let mut pos: usize = 0;
+        // for ch in self.chars {
+        //      pos += ch.encode_utf8(&mut buffer).len();
+        // }
+        //
+        // core::str::from_utf8(buffer[0..pos].asref()).unwrap()
+
+        Utf8Charray(self.chars[..self.len()].as_ref())
+    }
+
     /// Clear the message and start over.
     pub fn clear(&mut self) {
-        self.chars = [FILLER_BYTE; MSG_MAX];
+        self.chars = [FILLER; MSG_MAX];
         self.edit_pos = 0;
     }
 }
 
-// Message iterator
+/// Message iterator provides a convenient way to iterate over
+/// message characters. This doesn't include empty FILLER chars.
 pub struct MessageIterator<'a, const MSG_MAX: usize> {
     message: &'a Message<MSG_MAX>,
     index: usize,
 }
 
 impl<'a, const MSG_MAX: usize> Iterator for MessageIterator<'a, MSG_MAX> {
-    type Item = &'a u8;
+    type Item = &'a Character;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index < self.message.len() {
