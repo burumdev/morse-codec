@@ -1,6 +1,6 @@
 //! Morse code encoder to turn text into morse code text or signals.
 //!
-//! The encoder takes [&str] literals or character bytes and
+//! The encoder takes [&str] literals or characters and
 //! turns them into a fixed length char array. Then client code can encode these characters
 //! to morse code either character by character, from slices, or all in one go.  
 //! Encoded morse code can be retrieved as morse character arrays ie. ['.','-','.'] or Signal
@@ -11,7 +11,7 @@
 //! ```rust
 //! use morse_codec::encoder::Encoder;
 //!
-//! const MSG_MAX: usize = 3;
+//! const MSG_MAX: usize = 16;
 //! let mut encoder = Encoder::<MSG_MAX>::new()
 //!    // We have the message to encode ready and pass it to the builder.
 //!    // We pass true as second parameter to tell the encoder editing will
@@ -375,14 +375,14 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
     }
 
     // OUTPUTS
-    /// Get last encoded message character as `Option<u8>` byte arrays of morse code.
+    /// Get last encoded message character as `Option<Character>` arrays of morse code.
     ///
     /// Arrays will have a fixed length of `MORSE_ARRAY_LENGTH` and if there's no
     /// signal the option will be None.
     pub fn get_last_char_as_morse_charray(&self) -> Option<MorseCharray> {
-        let pos = self.message.get_edit_pos();
+        let pos = self.message.get_last_changed_index();
         if pos > 0 {
-            self.get_encoded_char_as_morse_charray(pos - 1)
+            self.get_encoded_char_as_morse_charray(pos)
         } else {
             None
         }
@@ -394,15 +394,15 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
     /// signals to play or animate the morse code.
     /// It'll be great to filter-out `Empty` values of SDM arrays.
     pub fn get_last_char_as_sdm(&self) -> Option<SDMArray> {
-        let pos = self.message.get_edit_pos();
+        let pos = self.message.get_last_changed_index();
         if pos > 0 {
-            self.get_encoded_char_as_sdm(pos - 1)
+            self.get_encoded_char_as_sdm(pos)
         } else {
             None
         }
     }
 
-    /// Get an iterator to encoded message as `Option<u8>` byte arrays of morse code.
+    /// Get an iterator to encoded message as `Option<Character>` arrays of morse code.
     /// Arrays will have a fixed length of `MORSE_ARRAY_LENGTH` and if there's no
     /// signal the option will be `None`. So it will be good to filter them out.
     pub fn get_encoded_message_as_morse_charrays(&self) -> impl Iterator<Item = Option<MorseCharray>> + '_ {

@@ -468,6 +468,11 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
         (1.2 / (self.reference_short_ms as f32 / 1000.0)) as u16
     }
 
+    /// Returns last decoded character for easy access.
+    pub fn get_last_decoded_char(&self) -> Character {
+        self.message.get_last_changed_char()
+    }
+
     /// Directly add a prepared signal to the character.
     ///
     /// Signal duration resolving is done by the client code, or you're using a prepared signal.

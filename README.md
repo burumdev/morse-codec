@@ -74,7 +74,7 @@ assert_eq!(message, "A");
 
 Morse code encoder to turn text into morse code text or signals.
 
-Encoder takes **&str** literals or character bytes and
+Encoder takes **&str** literals or characters and
 turns them into a fixed length array. Then client code can encode these characters
 to morse code either one by one, from slices, or all in one go.
 
@@ -84,7 +84,7 @@ Duration Multipliers **SDMArray** to calculate individual signal durations by th
 ```rust
 use morse_codec::encoder::Encoder;
 
-const MSG_MAX: usize = 3;
+const MSG_MAX: usize = 16;
 let mut encoder = Encoder::<MSG_MAX>::new()
    // We have the message to encode ready and pass it to the builder.
    // We pass true as second parameter to tell the encoder editing will
