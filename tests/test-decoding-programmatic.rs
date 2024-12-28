@@ -618,3 +618,80 @@ fn message_position_clamping() {
 
     assert_eq!(message, "AOS SOS");
 }
+
+#[test]
+fn decode_random_positions() {
+    const MSG_MAX: usize = 16;
+
+    println!("TEST DECODING AT RANDOM POSITIONS");
+
+    let mut decoder = Decoder::<MSG_MAX>::new()
+        .with_edit_position(8)
+        .with_message_pos_clamping()
+        .build();
+
+    println!();
+
+    print!("DECODED CHARS: ");
+    decoder.signal_event(100, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(100, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(100, true);
+    decoder.signal_event(300, false);
+
+    print!("{}", decoder.get_last_decoded_char());
+
+    decoder.signal_event(300, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(300, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(300, true);
+    decoder.signal_event(300, false);
+
+    print!("{}", decoder.get_last_decoded_char());
+
+    decoder.signal_event(100, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(100, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(100, true);
+    decoder.signal_event(300, false);
+
+    print!("{}", decoder.get_last_decoded_char());
+
+    decoder.message.set_edit_pos(3);
+
+    decoder.signal_event(300, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(300, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(300, true);
+    decoder.signal_event(300, false);
+
+    print!("{}", decoder.get_last_decoded_char());
+
+    decoder.signal_event(100, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(100, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(100, true);
+    decoder.signal_event(300, false);
+
+    print!("{}", decoder.get_last_decoded_char());
+
+    decoder.signal_event(300, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(300, true);
+    decoder.signal_event(100, false);
+    decoder.signal_event(300, true);
+    decoder.signal_event(300, false);
+
+    print!("{}", decoder.get_last_decoded_char());
+
+    println!();
+
+    println!("Resulting message at random inputs: '{}'", decoder.message.as_str());
+
+    println!();
+}

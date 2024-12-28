@@ -6,7 +6,7 @@
 //! ```ignore
 //! // Get a decoded message
 //! let decoded_message = decoder.message.as_str();
-//! let decoded_message_bytes = decoder.message.as_bytes();
+//! let decoded_message_chars = decoder.message.as_charray();
 //! // ...Do something with the message...
 //!
 //! // Clear the message
@@ -85,6 +85,7 @@ impl Utf8Charray<'_> {
 pub struct Message<const MSG_MAX: usize> {
     chars: [Character; MSG_MAX],
     edit_pos: usize,
+    last_change_index: usize,
     clamp_edit_pos: bool,
 }
 
@@ -93,6 +94,7 @@ impl<const MSG_MAX: usize> Default for Message<MSG_MAX> {
         Self {
             chars: [FILLER; MSG_MAX],
             edit_pos: 0,
+            last_change_index: 0,
             clamp_edit_pos: false,
         }
     }
@@ -109,7 +111,7 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
     /// text at the end.
     pub fn new(message_str: &str, edit_pos_end: bool, clamp_edit_pos: bool) -> Self {
         let mut new_self = Self {
-            chars: Self::str_to_bytes(message_str),
+            chars: Self::str_to_chars(message_str),
             clamp_edit_pos,
             ..Self::default()
         };
@@ -122,8 +124,8 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
     }
 
     #[cfg(not(feature = "utf8"))]
-    // Static member utility function to convert an &str to byte array internal format.
-    fn str_to_bytes(str: &str) -> [u8; MSG_MAX] {
+    // Static member utility function to convert an &str to character array internal format.
+    fn str_to_chars(str: &str) -> [u8; MSG_MAX] {
         let mut str_iter = str.chars()
             .take(MSG_MAX)
             .filter(|ch| ch.is_ascii());
@@ -137,7 +139,7 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
 
     #[cfg(feature = "utf8")]
     // Static member utility function to convert an &str to charray internal format.
-    fn str_to_bytes(str: &str) -> [Character; MSG_MAX] {
+    fn str_to_chars(str: &str) -> [Character; MSG_MAX] {
         let mut str_iter = str.chars()
             .take(MSG_MAX);
 
@@ -173,7 +175,7 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
 
 // Public API
 impl<const MSG_MAX: usize> Message<MSG_MAX> {
-    /// Get an iterator to the message bytes contained within.
+    /// Get an iterator to the message chars contained within.
     pub fn iter(&self) -> MessageIterator<MSG_MAX> {
         MessageIterator {
             message: self,
@@ -205,6 +207,14 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
         self.edit_pos
     }
 
+    pub fn get_last_changed_index(&self) -> usize {
+        self.last_change_index
+    }
+
+    pub fn get_last_changed_char(&self) -> Character {
+        self.chars[self.last_change_index]
+    }
+
     /// Move editing position to the left.
     /// By default it will wrap to the end if position is 0
     pub fn shift_edit_left(&mut self) {
@@ -233,6 +243,7 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
         // This is only necessary if client code sets edit position
         // manually and adds a character after it, but hey.
         self.update_empty_chars();
+        self.last_change_index = self.edit_pos;
     }
 
     /// Insert character at index.
@@ -240,12 +251,19 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
     /// If any characters before the character are [FILLER]s
     /// They'll automatically be converted to empty characters ' '
     /// which means the user wants some space between words.
-    pub fn put_char_at(&mut self, index: usize, ch: Character) {
-        self.chars[index] = ch;
-        self.update_empty_chars();
+    pub fn put_char_at(&mut self, index: usize, ch: Character) -> Result<(), &str> {
+        if index < MSG_MAX {
+            self.chars[index] = ch;
+            self.update_empty_chars();
+            self.last_change_index = index;
+
+            Ok(())
+        } else {
+            Err("Put char index doesn't fit into message length")
+        }
     }
 
-    /// Returns character at an index as a byte
+    /// Returns character at an index
     pub fn char_at(&self, index: usize) -> Character {
         self.chars[index]
     }
@@ -278,13 +296,15 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
         if message_str.len() > MSG_MAX {
             Err("Message string can't be longer than MSG_MAX.")
         } else {
-            self.chars = Self::str_to_bytes(message_str);
+            self.chars = Self::str_to_chars(message_str);
 
             if edit_pos_end {
                 self.edit_pos = self.len().clamp(0, Self::POS_MAX);
             } else {
                 self.edit_pos = 0;
             }
+
+            self.last_change_index = self.edit_pos;
 
             Ok(())
         }
