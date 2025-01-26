@@ -7,9 +7,11 @@ use crate::{
     Character,
 };
 
-/// Maximum number of characters in a mapping set of morse code to letters.
+/// Maximum number of characters in default mapping set of morse code to letters.
 pub const DEFAULT_CHARACTER_SET_LENGTH: usize = 53;
 
+/// Allows creating a custom character set.
+///
 /// Client code can use this type to construct a different character mapping to morse code
 /// and construct the decoder or encoder with this custom character set.
 ///
@@ -24,9 +26,6 @@ pub const DEFAULT_CHARACTER_SET_LENGTH: usize = 53;
 /// // Then
 /// let decoder = Decoder::<128>::new().with_character_set(my_set).build();
 /// ```
-///
-
-/// Allows creating a custom character set.
 pub type CharacterSet = &'static [Character];
 
 /// Default international morse code characters. It includes English language letters, numbers and
@@ -45,6 +44,10 @@ pub const DEFAULT_CHARACTER_SET: CharacterSet = &[
         ',', '?', ':', '-', '"', '(', '=', 'X', '.', ';', '/', '\'', '_', ')', '+', '@',
     ];
 
+/// Allows creating a custom morse code set.
+///
+/// Client code can use this type to construct a different morse code mapping to characters
+/// and construct the decoder or encoder with this custom morse code set.
 pub type MorseCodeSet = &'static [MorseCodeArray];
 
 /// Default internal representation of morse characters.

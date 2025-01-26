@@ -59,8 +59,11 @@ fn encoding_fox_one_by_one() {
     let mut encoder = Encoder::<MESSAGE_MAX_LENGTH>::new().build();
 
     QUICK_FOX.bytes().for_each(|ch| {
-        encoder.encode_character(&(ch as Character)).unwrap();
-        print_morse_charray(encoder.get_last_char_as_morse_charray().unwrap());
+        let encode_result = encoder.encode_character(&(ch as Character));
+        match encode_result {
+            Ok(_) => print_morse_charray(encoder.get_last_char_as_morse_charray().unwrap()),
+            Err(e) => eprintln!("ERROR: {e}"),
+        }
     });
 
     println!();

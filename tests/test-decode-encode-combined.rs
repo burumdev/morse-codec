@@ -1,24 +1,16 @@
 use morse_codec::{
     decoder::Decoder,
-    encoder::{
-        Encoder,
-        MorseCharray,
-        MorseEncoder,
-        SDM
-    }
+    encoder::{Encoder, MorseCharray, MorseEncoder, SDM},
 };
 
 #[cfg(feature = "utf8")]
 use morse_codec::message::Utf8Charray;
 
-use keyboard_query::{
-    DeviceQuery,
-    DeviceState,
-};
+use keyboard_query::{DeviceQuery, DeviceState};
 
 use std::{
-    time::{ Instant, Duration },
     thread::sleep,
+    time::{Duration, Instant},
 };
 
 const MSG_MAX: usize = 16;
@@ -33,12 +25,15 @@ fn print_morse_charray(mchar: MorseCharray) {
 fn play_message(morse_encoder: &mut MorseEncoder<MSG_MAX>) {
     println!("Now 'playing' reencoded message. You'll like it.");
     let sdms = morse_encoder.get_encoded_message_as_sdm_arrays();
+    let message_charray = morse_encoder.message.as_charray();
 
     const SHORT_DURATION: u16 = 150;
     sdms.enumerate().for_each(|(index, sdm_array)| {
         println!("SDM array: {:?}", sdm_array);
-        println!("CHARACTER IS: {}", morse_encoder.message.as_charray()[index] as char);
-        sdm_array.unwrap().iter()
+        println!("CHARACTER IS: {}", message_charray[index] as char);
+        sdm_array
+            .unwrap()
+            .iter()
             .filter(|&&sdm| sdm != SDM::Empty)
             .for_each(|sdm| {
                 let duration = match sdm {
@@ -47,13 +42,13 @@ fn play_message(morse_encoder: &mut MorseEncoder<MSG_MAX>) {
                         println!("HIGH! ({}) ", d);
 
                         d
-                    },
+                    }
                     SDM::Low(mul) => {
                         let d = *mul as u16 * SHORT_DURATION;
                         println!("LOW! ({}) ", d);
 
                         d
-                    },
+                    }
                     _ => 0,
                 };
 
@@ -118,7 +113,8 @@ fn decode_encode_sdm() {
         let keys = device_state.get_keys();
         if keys != prev_keys {
             if keys.len() == 1 {
-                if keys[0] == 31 { // Matching character 's' for signal
+                if keys[0] == 31 {
+                    // Matching character 's' for signal
                     if last_space_time.is_some() {
                         let diff = last_space_time.unwrap().elapsed().as_millis();
                         //println!("SPACE time diff = {} ms", diff);
@@ -126,7 +122,8 @@ fn decode_encode_sdm() {
                     }
 
                     last_signal_time = Some(Instant::now());
-                } else if keys[0] == 30 { // Matching character 'a' for all or end input
+                } else if keys[0] == 30 {
+                    // Matching character 'a' for all or end input
                     morse_decoder.signal_event_end(false);
 
                     let message = morse_decoder.message.as_str();
@@ -137,7 +134,8 @@ fn decode_encode_sdm() {
 
                     reencode_message(message, &mut morse_encoder);
                     play_message(&mut morse_encoder);
-                } else if keys[0] == 16 { // Character 'q' for quitting
+                } else if keys[0] == 16 {
+                    // Character 'q' for quitting
                     break;
                 }
             } else if prev_keys.len() == 1 && prev_keys[0] == 31 && keys.is_empty() {
