@@ -198,6 +198,7 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
         self.clamp_edit_pos = clamp;
     }
 
+    /// Returns if edit position movement is clamping to the ends of the message
     pub fn is_edit_clamped(&self) -> bool {
         self.clamp_edit_pos
     }
@@ -207,10 +208,12 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
         self.edit_pos
     }
 
+    /// Returns index of last added character
     pub fn get_last_changed_index(&self) -> usize {
         self.last_change_index
     }
 
+    /// Returns the character at the index of last change
     pub fn get_last_changed_char(&self) -> Character {
         self.chars[self.last_change_index]
     }
@@ -282,8 +285,8 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
 
     /// Returns true if the message is empty, false otherwise.
     ///
-    /// This method discards FILLER characters and only takes into
-    /// account normal characters.
+    /// This method discards FILLER characters and only takes
+    /// normal characters into account.
     pub fn is_empty(&self) -> bool {
         self.last_char_index().is_none()
     }

@@ -381,11 +381,7 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
     /// signal the option will be None.
     pub fn get_last_char_as_morse_charray(&self) -> Option<MorseCharray> {
         let pos = self.message.get_last_changed_index();
-        if pos > 0 {
-            self.get_encoded_char_as_morse_charray(pos)
-        } else {
-            None
-        }
+        self.get_encoded_char_as_morse_charray(pos)
     }
 
     /// Get last encoded message character as `Option<SDM>` arrays of morse code.
@@ -395,11 +391,7 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
     /// It'll be great to filter-out `Empty` values of SDM arrays.
     pub fn get_last_char_as_sdm(&self) -> Option<SDMArray> {
         let pos = self.message.get_last_changed_index();
-        if pos > 0 {
-            self.get_encoded_char_as_sdm(pos)
-        } else {
-            None
-        }
+        self.get_encoded_char_as_sdm(pos)
     }
 
     /// Get an iterator to encoded message as `Option<Character>` arrays of morse code.
