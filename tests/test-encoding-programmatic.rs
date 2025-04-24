@@ -11,6 +11,7 @@ use morse_codec::{
     },
     Character,
 };
+use morse_codec::encoder::MorseNotation;
 
 const QUICK_FOX: &str = "The quick brown fox jumps over the lazy dog?";
 
@@ -233,6 +234,46 @@ fn encoding_fox_play_sdm() {
 
                 thread::sleep(Duration::from_millis(duration as u64));
             });
+    });
+}
+
+#[test]
+fn encoding_fox_custom_notation() {
+    const MESSAGE_MAX_LENGTH: usize = 64;
+
+    println!("TESTING ENCODING 'The quick brown fox...' with a custom notation.");
+    println!("We will use 'S' for dit, 'L' for dah and '_' for word delimiter.");
+    println!();
+
+    #[cfg(not(feature = "utf8"))]
+    let notation = MorseNotation {
+        dit: b'S',
+        dah: b'L',
+        word_delimiter: b'_',
+    };
+
+    #[cfg(feature = "utf8")]
+    let notation = MorseNotation {
+        dit: 'S',
+        dah: 'L',
+        word_delimiter: '_',
+    };
+
+    let mut encoder = Encoder::<MESSAGE_MAX_LENGTH>::new()
+        .with_message(QUICK_FOX, true)
+        .with_notation(notation)
+        .build();
+
+    println!("Message string is: {}", encoder.message.as_str());
+    println!("Message length: {}", encoder.message.len());
+    println!("Morse encoded version with custom notation:");
+    println!();
+
+    encoder.encode_message_all();
+    let encoded_charrays = encoder.get_encoded_message_as_morse_charrays();
+
+    encoded_charrays.for_each(|charray| {
+        print_morse_charray(charray.unwrap());
     });
 }
 
