@@ -2,7 +2,7 @@
 //!
 //! The encoder takes [&str] literals or characters and
 //! turns them into a fixed length char array. Then client code can encode these characters
-//! to morse code either character by character, from slices, or all in one go.  
+//! to morse code either character by character, from slices, or all in one go.
 //! Encoded morse code can be retrieved as morse character arrays ie. ['.','-','.'] or Signal
 //! Duration Multipliers [SDMArray] to calculate individual signal durations by the client code.
 //!
@@ -50,9 +50,22 @@ use crate::{
     Character,
 };
 
-const DIT: Character = '.' as Character;
-const DAH: Character = '-' as Character;
-const WORD_DELIMITER: Character = '/' as Character;
+/// Notation characters to be used while outputting morse code as signal characters ie: "... --- ..."
+/// Default is '.' for dit, '-' as dah and '/' for word delimiter.
+/// You can change these characters by using `with_notation` builder method of Encoder.
+/// You can use byte characters b'X' or chars if utf8 feature is enabled like: 'X'
+pub struct MorseNotation {
+    pub dit: Character,
+    pub dah: Character,
+    pub word_delimiter: Character,
+}
+
+const DEFAULT_MORSE_NOTATION: MorseNotation = MorseNotation {
+    dit: '.' as Character,
+    dah: '-' as Character,
+    word_delimiter: '/' as Character,
+};
+
 const SDM_LENGTH: usize = 12;
 
 /// Signal Duration Multiplier can be 1x (short), 3x (long) or 7x (word space).
@@ -83,6 +96,7 @@ pub struct Encoder<const MSG_MAX: usize> {
     message: Message<MSG_MAX>,
     character_set: CharacterSet,
     morse_code_set: MorseCodeSet,
+    notation: MorseNotation,
     // Internal stuff
     encoded_message: [MorseCodeArray; MSG_MAX],
 }
@@ -99,6 +113,7 @@ impl<const MSG_MAX: usize> Encoder<MSG_MAX> {
             message: Message::default(),
             character_set: DEFAULT_CHARACTER_SET,
             morse_code_set: DEFAULT_MORSE_CODE_SET,
+            notation: DEFAULT_MORSE_NOTATION,
             encoded_message: [MORSE_DEFAULT_CHAR; MSG_MAX],
         }
     }
@@ -163,14 +178,23 @@ impl<const MSG_MAX: usize> Encoder<MSG_MAX> {
         self
     }
 
-    /// Build and get yourself a shiny new [MorseEncoder].
+    /// Change the notation characters to be used when outputting morse code as text.
+    /// Defualt notation is like "... --- ..." for "SOS". Pass a [MorseNotation] object to the function with your own characters to change it.
     ///
-    /// The ring is yours now...
+    /// You can use byte characters b'X' in ASCII mode or chars if utf8 feature is enabled like: 'X'
+    /// So international UTF8 characters are also allowed with the utf8 feature.
+    pub fn with_notation(mut self, notation: MorseNotation) -> Self {
+        self.notation = notation;
+
+        self
+    }
+
     pub fn build(self) -> MorseEncoder<MSG_MAX> {
         let Encoder {
             message,
             character_set,
             morse_code_set,
+            notation,
             encoded_message,
         } = self;
 
@@ -178,6 +202,7 @@ impl<const MSG_MAX: usize> Encoder<MSG_MAX> {
             message,
             character_set,
             morse_code_set,
+            notation,
             encoded_message,
         }
     }
@@ -188,6 +213,7 @@ pub struct MorseEncoder<const MSG_MAX: usize> {
     pub message: Message<MSG_MAX>,
     character_set: CharacterSet,
     morse_code_set: MorseCodeSet,
+    notation: MorseNotation,
     // Internal stuff
     encoded_message: [MorseCodeArray; MSG_MAX],
 }
@@ -210,12 +236,12 @@ impl<const MSG_MAX: usize> MorseEncoder<MSG_MAX> {
         if index < self.message.len() {
             let encoded_char = self.encoded_message[index].clone();
             if encoded_char == MORSE_DEFAULT_CHAR {
-                Some([Some(WORD_DELIMITER), None, None, None, None, None])
+                Some([Some(self.notation.word_delimiter), None, None, None, None, None])
             } else {
                 Some(encoded_char.map(|mchar| {
                     match mchar {
-                        Some(S) => Some(DIT),
-                        Some(L) => Some(DAH),
+                        Some(S) => Some(self.notation.dit),
+                        Some(L) => Some(self.notation.dah),
                         _ => None,
                     }
                 }))
