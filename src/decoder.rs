@@ -122,6 +122,7 @@ pub struct Decoder<const MSG_MAX: usize> {
     reference_short_ms: MilliSeconds,
     message: Message<MSG_MAX>,
     // Internal stuff
+    is_calibrated: bool,
     current_character: MorseCodeArray,
     signal_pos: usize,
     signal_buffer: SignalBuffer,
@@ -144,6 +145,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
             reference_short_ms: 0,
             message: Message::default(),
             // Internal stuff
+            is_calibrated: false,
             current_character: MORSE_DEFAULT_CHAR,
             signal_pos: 0,
             signal_buffer: [SDEmpty; SIGNAL_BUFFER_LENGTH],
@@ -242,8 +244,10 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
     /// determine long signals and very long word separator signals.
     /// Default value of 0 means MorseDecoder will try to calculate the reference short duration
     /// from incoming signals. This might not work well if the message starts with a 'T'.
+    /// Once decoder is calibrated, reference short duration can be changed manually with `set_reference_short` method.
     pub fn with_reference_short_ms(mut self, reference_short_ms: MilliSeconds) -> Self {
         self.reference_short_ms = reference_short_ms;
+        self.is_calibrated = true;
 
         self
     }
@@ -276,6 +280,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
             signal_tolerance,
             reference_short_ms,
             message,
+            is_calibrated,
             current_character,
             signal_pos,
             signal_buffer,
@@ -288,6 +293,7 @@ impl<const MSG_MAX: usize> Decoder<MSG_MAX> {
             signal_tolerance,
             reference_short_ms,
             message,
+            is_calibrated,
             current_character,
             signal_pos,
             signal_buffer,
@@ -308,6 +314,7 @@ pub struct MorseDecoder<const MSG_MAX: usize> {
     reference_short_ms: MilliSeconds,
     pub message: Message<MSG_MAX>,
     // Internal stuff
+    is_calibrated: bool,
     current_character: MorseCodeArray,
     signal_pos: usize,
     signal_buffer: SignalBuffer,
@@ -455,11 +462,17 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
 impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
     /// Returns currently resolved reference short signal duration.
     ///
-    /// Reference short signal is resolved continuously by the decoder as signal events pour in.
+    /// Reference short signal might be resolved and calibrated by the decoder
+    /// if it wasn't set initally by the builder via `with_reference_short_ms` method.
     /// As longer signal durations are calculated by multiplying this value,
     /// it might be useful for the client code.
     pub fn get_reference_short(&self) -> MilliSeconds {
         self.reference_short_ms
+    }
+
+    /// Manually change the reference short signal duration.
+    pub fn set_reference_short(&mut self, reference_short: MilliSeconds) {
+        self.update_reference_short_ms(reference_short);
     }
 
     /// Returns the current signal entry speed in
@@ -572,9 +585,10 @@ impl<const MSG_MAX: usize> MorseDecoder<MSG_MAX> {
             // 3. It's a very long signal (x7 or more) to divide two words in the message. So
             // we check the signal buffer and add the character, as well as a space after it.
             _pos if !is_high => {
-                if duration_ms < self.reference_short_ms && !tolerance_range.contains(&self.reference_short_ms) {
+                if !self.is_calibrated && duration_ms < self.reference_short_ms && !tolerance_range.contains(&self.reference_short_ms) {
                     //println!("Updating reference short to {}", duration_ms);
                     self.update_reference_short_ms(duration_ms);
+                    self.is_calibrated = true;
                 }
 
                 let resolved_duration = self.resolve_signal_duration(duration_ms, &tolerance_range, is_high);

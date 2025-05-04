@@ -65,3 +65,49 @@ fn message_iter() {
     }
 }
 
+#[test]
+fn message_pop() {
+    println!("TEST decoder with 'SOS', then popping the last character.");
+    println!();
+
+    use morse_codec::MorseSignal::{Long as L, Short as S};
+
+    const MESSAGE_MAX_LENGTH: usize = 3;
+
+    let mut decoder = Decoder::<MESSAGE_MAX_LENGTH>::new().build();
+
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+
+    decoder.add_current_char_to_message();
+
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_signal_to_character(Some(L));
+    decoder.add_signal_to_character(Some(L));
+
+    decoder.add_current_char_to_message();
+
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+    decoder.add_signal_to_character(Some(S));
+
+    decoder.add_current_char_to_message();
+
+    let msg = decoder.message.as_str();
+
+    println!("Message before popping the last char: {}", msg);
+    if let Some(char) = decoder.message.pop() {
+        println!("Last character is: {}", char as char);
+        println!("Message after popping: {}", decoder.message.as_str());
+    }
+
+    println!();
+    println!("Popping till empty");
+    while let Some(char) = decoder.message.pop() {
+        println!("Last character is: {}", char as char);
+    }
+
+    assert!(decoder.message.is_empty());
+}
+
