@@ -348,6 +348,19 @@ impl<const MSG_MAX: usize> Message<MSG_MAX> {
         Utf8Charray(self.chars[..self.len()].as_ref())
     }
 
+    /// Pop the last character from the message and return it
+    /// deleting it from the message in the process.
+    pub fn pop(&mut self) -> Option<Character> {
+        if self.len() > 0 {
+            let last = self.chars[self.len() - 1];
+            self.chars[self.len() - 1] = FILLER;
+
+            Some(last)
+        } else {
+            None
+        }
+    }
+
     /// Clear the message and start over.
     pub fn clear(&mut self) {
         self.chars = [FILLER; MSG_MAX];
